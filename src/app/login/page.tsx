@@ -1,12 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { signIn, user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -17,15 +24,16 @@ export default function LoginPage() {
     password: ''
   })
 
-  // Check for success message from registration
   useEffect(() => {
-    const message = searchParams.get('message')
-    if (message) {
-      setSuccess(decodeURIComponent(message))
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      const message = sp.get('message')
+      if (message) {
+        setSuccess(decodeURIComponent(message))
+      }
     }
-  }, [searchParams])
+  }, [])
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       router.push('/dashboard')
@@ -40,10 +48,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(formData.email, formData.password)
-      
-      if (result.success) {
-        // Redirect will happen automatically via useEffect when user state updates
-      } else {
+      if (!result.success) {
         setError(result.error || 'Login failed')
       }
     } catch (error) {
@@ -177,3 +182,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
