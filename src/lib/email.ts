@@ -1,6 +1,11 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Leave Management System'
+const fromEmail = process.env.FROM_EMAIL || 'noreply@yourdomain.com'
+const fromName = process.env.FROM_NAME || appName
+const fromAddress = `${fromName} <${fromEmail}>`
+
 
 export interface InviteEmailData {
   email: string
@@ -33,9 +38,9 @@ export const emailService = {
       const expirationTime = data.expiresAt.toLocaleString()
 
       const { data: result, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        from: fromAddress,
         to: [data.email],
-        subject: `Invitation to Join Leave Management System - ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
+        subject: `Invitation to join ${appName} - ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
         html: generateInviteEmailHTML(data, appUrl, expirationTime),
         text: generateInviteEmailText(data, appUrl, expirationTime)
       })
@@ -67,11 +72,11 @@ export const emailService = {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Reset your password</title>
+          <title>Reset your ${appName} password</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; color: #111827;">
           <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px;">
-            <h1 style="margin:0 0 8px 0;">Reset your password</h1>
+            <h1 style="margin:0 0 8px 0;">Reset your ${appName} password</h1>
             <p>Hello <strong>${data.firstName} ${data.lastName}</strong>,</p>
             <p>We received a request to reset the password for your account. Click the button below to choose a new password.</p>
             <p style="text-align:center;">
@@ -83,12 +88,12 @@ export const emailService = {
         </html>
       `
 
-      const text = `Reset your password\n\nHello ${data.firstName} ${data.lastName},\n\nReset link: ${data.resetUrl}\n\nThis link will expire on ${expirationTime}. If you did not request a password reset, you can ignore this email.`
+      const text = `Reset your ${appName} password\n\nHello ${data.firstName} ${data.lastName},\n\nReset link: ${data.resetUrl}\n\nThis link will expire on ${expirationTime}. If you did not request a password reset, you can ignore this email.`
 
       const { data: result, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        from: fromAddress,
         to: [data.email],
-        subject: `Reset your password - Leave Management System`,
+        subject: `Reset your ${appName} password`,
         html,
         text
       })

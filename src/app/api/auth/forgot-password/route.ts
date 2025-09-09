@@ -3,6 +3,20 @@ import { db } from '@/lib/db'
 import { emailService } from '@/lib/email'
 import crypto from 'crypto'
 
+// Simple in-memory rate limiter (per-instance)
+const rateMap = new Map<string, { count: number; windowStart: number }>()
+function isRateLimited(key: string, limit: number, windowMs: number) {
+  const now = Date.now()
+  const entry = rateMap.get(key)
+  if (!entry || now - entry.windowStart > windowMs) {
+    rateMap.set(key, { count: 1, windowStart: now })
+    return false
+  }
+  if (entry.count >= limit) return true
+  entry.count += 1
+  return false
+}
+
 async function ensurePasswordResetTable() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -26,6 +40,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
+    // Rate limiting (best-effort, avoids enumeration by returning success when limited)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const ipKey = `fp:ip:${ip}`
+    const emailKey = `fp:email:${email.toLowerCase()}`
+    const WINDOW_MS = 60 * 60 * 1000 // 1 hour
+    const IP_LIMIT = 10 // per hour per IP
+    const EMAIL_LIMIT = 3 // per hour per email
+
+    const limited = isRateLimited(ipKey, IP_LIMIT, WINDOW_MS) || isRateLimited(emailKey, EMAIL_LIMIT, WINDOW_MS)
+    if (limited) {
+      // Always return success to prevent probing
+      return NextResponse.json({ success: true })
+    }
+
     // Look up user by email
     const userRes = await db.query('SELECT id, first_name, last_name, email FROM profiles WHERE email = $1', [email])
 
@@ -43,7 +71,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 1) // 1-hour validity
 
-    // Upsert style: ensure previous tokens for this user are invalidated (optional)
+    // Invalidate previous tokens for this user
     await db.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id])
 
     await db.query(
@@ -56,7 +84,7 @@ export async function POST(request: NextRequest) {
     const resetUrl = `${appUrl}/reset-password?token=${token}`
 
     // Send email (best-effort)
-    const result = await emailService.sendPasswordResetEmail({
+    await emailService.sendPasswordResetEmail({
       email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,

@@ -11,12 +11,40 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [validating, setValidating] = useState(false)
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null)
 
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search)
       const t = params.get('token')
       setToken(t)
+      if (t) {
+        // Pre-validate token
+        setValidating(true)
+        fetch(`/api/auth/reset-password/validate?token=${encodeURIComponent(t)}`)
+          .then(async (res) => res.json())
+          .then((data) => {
+            if (!data.valid) {
+              const reason = data.reason as 'invalid' | 'expired' | 'used' | undefined
+              const msg =
+                reason === 'expired'
+                  ? 'This reset link has expired. Please request a new one.'
+                  : reason === 'used'
+                  ? 'This reset link has already been used. Please request a new one.'
+                  : 'Invalid reset link. Please request a new one.'
+              setError(msg)
+              setTokenValid(false)
+            } else {
+              setTokenValid(true)
+            }
+          })
+          .catch(() => {
+            setError('Unable to validate reset link. Please try again.')
+            setTokenValid(false)
+          })
+          .finally(() => setValidating(false))
+      }
     } catch (e) {
       console.error('Failed to parse URL params', e)
     }
@@ -69,6 +97,10 @@ export default function ResetPasswordPage() {
           <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700 text-sm mb-4">Missing reset token. Please copy the full link from your email.</div>
         )}
 
+        {validating && (
+          <div className="rounded-md bg-blue-50 border border-blue-200 p-3 text-blue-700 text-sm mb-4">Validating reset link...</div>
+        )}
+
         {success ? (
           <div className="rounded-md bg-green-50 border border-green-200 p-4 text-green-800">Password reset successful. Redirecting to login...</div>
         ) : (
@@ -98,12 +130,14 @@ export default function ResetPasswordPage() {
             )}
             <button
               type="submit"
-              disabled={submitting || !token}
+              disabled={submitting || !token || tokenValid === false || validating}
               className="w-full inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {submitting ? 'Resetting...' : 'Reset password'}
             </button>
             <div className="text-center text-sm mt-2">
+              <a href="/forgot-password" className="text-blue-600 hover:underline">Request a new link</a>
+              <span className="mx-2 text-gray-300">|</span>
               <a href="/login" className="text-blue-600 hover:underline">Back to login</a>
             </div>
           </form>
