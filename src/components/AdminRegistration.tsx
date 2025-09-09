@@ -3,13 +3,16 @@
 import { useState } from 'react'
 import { authService } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
+
 
 interface AdminRegistrationProps {
-  onSuccess: () => void
+  onSuccess?: () => void
 }
 
 export default function AdminRegistration({ onSuccess }: AdminRegistrationProps) {
   const { setUser } = useAuth()
+  const router = useRouter()
   const [formData, setFormData] = useState({
     firstName: '',
     otherNames: '',
@@ -82,7 +85,11 @@ export default function AdminRegistration({ onSuccess }: AdminRegistrationProps)
       if (response.ok && result.success) {
         // Set the user in the auth context
         setUser(result.user)
-        onSuccess()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push('/login')
+        }
       } else {
         setError(result.error || 'Registration failed')
       }
@@ -96,7 +103,7 @@ export default function AdminRegistration({ onSuccess }: AdminRegistrationProps)
   return (
     <div className="bg-white shadow-lg rounded-lg p-6">
       <h2 className="text-2xl font-bold text-center mb-6">Admin Registration</h2>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
