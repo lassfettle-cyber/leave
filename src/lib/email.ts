@@ -12,6 +12,15 @@ export interface InviteEmailData {
   invitedBy: string
 }
 
+export interface ResetEmailData {
+  email: string
+  firstName: string
+  lastName: string
+  resetUrl: string
+  expiresAt: Date
+}
+
+
 export const emailService = {
   async sendInviteEmail(data: InviteEmailData): Promise<{ success: boolean; error?: string }> {
     try {
@@ -42,6 +51,59 @@ export const emailService = {
       console.error('Error sending invite email:', error)
       return { success: false, error: 'Failed to send email' }
     }
+  },
+  async sendPasswordResetEmail(data: ResetEmailData): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY not configured, skipping email send')
+        return { success: false, error: 'Email service not configured' }
+      }
+
+      const expirationTime = data.expiresAt.toLocaleString()
+
+      const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Reset your password</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; color: #111827;">
+          <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px;">
+            <h1 style="margin:0 0 8px 0;">Reset your password</h1>
+            <p>Hello <strong>${data.firstName} ${data.lastName}</strong>,</p>
+            <p>We received a request to reset the password for your account. Click the button below to choose a new password.</p>
+            <p style="text-align:center;">
+              <a href="${data.resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;">Reset password</a>
+            </p>
+            <p style="color:#6b7280;font-size:14px;">This link will expire on <strong>${expirationTime}</strong>. If you did not request a password reset, you can safely ignore this email.</p>
+          </div>
+        </body>
+        </html>
+      `
+
+      const text = `Reset your password\n\nHello ${data.firstName} ${data.lastName},\n\nReset link: ${data.resetUrl}\n\nThis link will expire on ${expirationTime}. If you did not request a password reset, you can ignore this email.`
+
+      const { data: result, error } = await resend.emails.send({
+        from: process.env.FROM_EMAIL || 'noreply@yourdomain.com',
+        to: [data.email],
+        subject: `Reset your password - Leave Management System`,
+        html,
+        text
+      })
+
+      if (error) {
+        console.error('Resend email error:', error)
+        return { success: false, error: error.message }
+      }
+
+      console.log('Password reset email sent successfully:', result?.id)
+      return { success: true }
+    } catch (error) {
+      console.error('Error sending password reset email:', error)
+      return { success: false, error: 'Failed to send email' }
+    }
   }
 }
 
@@ -54,113 +116,22 @@ function generateInviteEmailHTML(data: InviteEmailData, appUrl: string, expirati
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Leave Management System Invitation</title>
       <style>
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-          background-color: #f9fafb;
-        }
-        .container {
-          background-color: white;
-          border-radius: 8px;
-          padding: 40px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #2563eb;
-          margin-bottom: 10px;
-        }
-        .otp-code {
-          background-color: #f3f4f6;
-          border: 2px dashed #d1d5db;
-          border-radius: 8px;
-          padding: 20px;
-          text-align: center;
-          margin: 30px 0;
-        }
-        .otp-number {
-          font-size: 32px;
-          font-weight: bold;
-          color: #1f2937;
-          letter-spacing: 4px;
-          font-family: 'Courier New', monospace;
-        }
-        .button {
-          display: inline-block;
-          background-color: #2563eb;
-          color: white;
-          padding: 12px 24px;
-          text-decoration: none;
-          border-radius: 6px;
-          font-weight: 500;
-          margin: 20px 0;
-        }
-        .warning {
-          background-color: #fef3c7;
-          border-left: 4px solid #f59e0b;
-          padding: 16px;
-          margin: 20px 0;
-          border-radius: 4px;
-        }
-        .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
-          font-size: 14px;
-          color: #6b7280;
-          text-align: center;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; color: #111827; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; }
+        .btn { display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 6px; margin: 16px 0; }
+        .otp { background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: 8px; padding: 16px; text-align: center; font-weight: bold; letter-spacing: 3px; }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="header">
-          <div class="logo">🏢 Leave Management System</div>
-          <h1>You're Invited!</h1>
-        </div>
-        
+        <h1 style="margin:0 0 8px 0;">You're Invited!</h1>
         <p>Hello <strong>${data.firstName} ${data.lastName}</strong>,</p>
-        
-        <p>You have been invited to join our Leave Management System as a <strong>${data.role}</strong>. To complete your registration, please use the following One-Time Password (OTP):</p>
-        
-        <div class="otp-code">
-          <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">Your OTP Code</div>
-          <div class="otp-number">${data.otpCode}</div>
-        </div>
-        
-        <div style="text-align: center;">
-          <a href="${appUrl}/register?email=${encodeURIComponent(data.email)}" class="button">
-            Complete Registration
-          </a>
-        </div>
-        
-        <div class="warning">
-          <strong>⚠️ Important:</strong> This invitation expires on <strong>${expirationTime}</strong>. Please complete your registration before this time.
-        </div>
-        
-        <h3>What's Next?</h3>
-        <ol>
-          <li>Click the "Complete Registration" button above</li>
-          <li>Enter your email address and the OTP code provided</li>
-          <li>Set up your password and complete your profile</li>
-          <li>Start managing your leave requests!</li>
-        </ol>
-        
-        <p>If you have any questions or need assistance, please contact your administrator.</p>
-        
-        <div class="footer">
-          <p>This invitation was sent by ${data.invitedBy}</p>
-          <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-        </div>
+        <p>You have been invited to join our Leave Management System as a <strong>${data.role}</strong>. Use the One-Time Password (OTP) below to complete your registration.</p>
+        <div class="otp">${data.otpCode}</div>
+        <p style="text-align:center;">
+          <a href="${appUrl}/register?email=${encodeURIComponent(data.email)}" class="btn">Complete Registration</a>
+        </p>
+        <p style="color:#6b7280;font-size:14px;">This invitation expires on <strong>${expirationTime}</strong>.</p>
       </div>
     </body>
     </html>
@@ -184,10 +155,5 @@ To complete your registration:
 4. Start managing your leave requests!
 
 IMPORTANT: This invitation expires on ${expirationTime}
-
-If you have any questions, please contact your administrator.
-
-This invitation was sent by ${data.invitedBy}
-If you didn't expect this invitation, you can safely ignore this email.
   `.trim()
 }
