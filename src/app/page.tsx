@@ -5,11 +5,9 @@ import { profileService } from '@/lib/database'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
+  let adminExists = false
   try {
-    const adminExists = await profileService.checkAdminExists()
-    if (adminExists) {
-      redirect('/login')
-    }
+    adminExists = await profileService.checkAdminExists()
   } catch (error) {
     console.error('Error checking admin:', error)
     return (
@@ -31,6 +29,10 @@ export default async function Home() {
         </div>
       </div>
     )
+  }
+
+  if (adminExists) {
+    redirect('/login')
   }
 
   return (
