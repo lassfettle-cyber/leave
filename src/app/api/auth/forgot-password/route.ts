@@ -80,8 +80,11 @@ export async function POST(request: NextRequest) {
       [tokenHash, user.id, expiresAt]
     )
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const resetUrl = `${appUrl}/reset-password?token=${token}`
+    const appUrlRaw = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = appUrlRaw.replace(/\/+$/, '')
+    const resetUrlObj = new URL('/reset-password', appUrl)
+    resetUrlObj.searchParams.set('token', token)
+    const resetUrl = resetUrlObj.toString()
 
     // Send email (best-effort)
     await emailService.sendPasswordResetEmail({
