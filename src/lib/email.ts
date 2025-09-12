@@ -1,11 +1,54 @@
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { SMTPClient } from 'emailjs'
 const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Leave Management System'
 const fromEmail = process.env.FROM_EMAIL || 'noreply@yourdomain.com'
 const fromName = process.env.FROM_NAME || appName
 const fromAddress = `${fromName} <${fromEmail}>`
 
+
+const smtpHost = process.env.SMTP_HOST || 'smtp.mailersend.net'
+const smtpPort = Number(process.env.SMTP_PORT || 587)
+const smtpUser = process.env.SMTP_USER
+const smtpPass = process.env.SMTP_PASS
+
+async function smtpSend(to: string, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!smtpUser || !smtpPass) {
+      console.warn('SMTP credentials not configured, skipping email send')
+      return { success: false, error: 'Email service not configured' }
+    }
+
+    const client = new SMTPClient({
+      host: smtpHost,
+      port: smtpPort,
+      user: smtpUser,
+      password: smtpPass,
+      // Use STARTTLS on 587/2525
+      tls: { rejectUnauthorized: false }
+    })
+
+    await new Promise((resolve, reject) => {
+      client.send(
+        {
+          from: fromAddress,
+          to,
+          subject,
+          text,
+          // alternative=true marks it as the HTML version
+          attachment: [{ data: html, alternative: true }]
+        },
+        (err, message) => {
+          if (err) return reject(err)
+          resolve(message)
+        }
+      )
+    })
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('SMTP send error:', err)
+    return { success: false, error: err?.message || 'SMTP send failed' }
+  }
+}
 
 export interface InviteEmailData {
   email: string
@@ -29,29 +72,19 @@ export interface ResetEmailData {
 export const emailService = {
   async sendInviteEmail(data: InviteEmailData): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        console.warn('RESEND_API_KEY not configured, skipping email send')
-        return { success: false, error: 'Email service not configured' }
-      }
-
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const expirationTime = data.expiresAt.toLocaleString()
 
-      const { data: result, error } = await resend.emails.send({
-        from: fromAddress,
-        to: [data.email],
-        subject: `Invitation to join ${appName} - ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
-        html: generateInviteEmailHTML(data, appUrl, expirationTime),
-        text: generateInviteEmailText(data, appUrl, expirationTime)
-      })
+      const html = generateInviteEmailHTML(data, appUrl, expirationTime)
+      const text = generateInviteEmailText(data, appUrl, expirationTime)
 
-      if (error) {
-        console.error('Resend email error:', error)
-        return { success: false, error: error.message }
-      }
-
-      console.log('Invite email sent successfully:', result?.id)
-      return { success: true }
+      const result = await smtpSend(
+        data.email,
+        `Invitation to join ${appName} - ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
+        html,
+        text
+      )
+      return result
     } catch (error) {
       console.error('Error sending invite email:', error)
       return { success: false, error: 'Failed to send email' }
@@ -59,11 +92,6 @@ export const emailService = {
   },
   async sendPasswordResetEmail(data: ResetEmailData): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        console.warn('RESEND_API_KEY not configured, skipping email send')
-        return { success: false, error: 'Email service not configured' }
-      }
-
       const expirationTime = data.expiresAt.toLocaleString()
 
       const html = `
@@ -90,21 +118,12 @@ export const emailService = {
 
       const text = `Reset your ${appName} password\n\nHello ${data.firstName} ${data.lastName},\n\nReset link: ${data.resetUrl}\n\nThis link will expire on ${expirationTime}. If you did not request a password reset, you can ignore this email.`
 
-      const { data: result, error } = await resend.emails.send({
-        from: fromAddress,
-        to: [data.email],
-        subject: `Reset your ${appName} password`,
+      return await smtpSend(
+        data.email,
+        `Reset your ${appName} password`,
         html,
         text
-      })
-
-      if (error) {
-        console.error('Resend email error:', error)
-        return { success: false, error: error.message }
-      }
-
-      console.log('Password reset email sent successfully:', result?.id)
-      return { success: true }
+      )
     } catch (error) {
       console.error('Error sending password reset email:', error)
       return { success: false, error: 'Failed to send email' }
