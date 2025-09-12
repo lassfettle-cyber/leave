@@ -50,6 +50,46 @@ async function smtpSend(to: string, subject: string, html: string, text: string)
   }
 }
 
+async function msApiSend(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }>{
+  try {
+    const token = process.env.MAILERSEND_API_TOKEN
+    if (!token) return { success: false, error: 'MAILERSEND_API_TOKEN not set' }
+
+    const res = await fetch('https://api.mailersend.com/v1/email', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: { email: fromEmail, name: fromName },
+        to: [{ email: to, name: toName }],
+        subject,
+        text,
+        html
+      })
+    })
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      console.error('MailerSend API error:', res.status, errText)
+      return { success: false, error: `MailerSend API error ${res.status}` }
+    }
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('MailerSend API send error:', err)
+    return { success: false, error: err?.message || 'MailerSend API send failed' }
+  }
+}
+
+async function sendEmail(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }> {
+  if (process.env.MAILERSEND_API_TOKEN) {
+    return msApiSend(to, toName, subject, html, text)
+  }
+  return smtpSend(to, subject, html, text)
+}
+
 export interface InviteEmailData {
   email: string
   firstName: string
@@ -78,8 +118,9 @@ export const emailService = {
       const html = generateInviteEmailHTML(data, appUrl, expirationTime)
       const text = generateInviteEmailText(data, appUrl, expirationTime)
 
-      const result = await smtpSend(
+      const result = await sendEmail(
         data.email,
+        `${data.firstName} ${data.lastName}`,
         `Invitation to join ${appName} - ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`,
         html,
         text
@@ -118,8 +159,9 @@ export const emailService = {
 
       const text = `Reset your ${appName} password\n\nHello ${data.firstName} ${data.lastName},\n\nReset link: ${data.resetUrl}\n\nThis link will expire on ${expirationTime}. If you did not request a password reset, you can ignore this email.`
 
-      return await smtpSend(
+      return await sendEmail(
         data.email,
+        `${data.firstName} ${data.lastName}`,
         `Reset your ${appName} password`,
         html,
         text
