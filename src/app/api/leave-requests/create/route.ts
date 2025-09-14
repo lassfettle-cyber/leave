@@ -17,6 +17,16 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, JWT_SECRET) as any
+    // Prevent admins from creating leave requests
+    const roleRes = await db.query('SELECT role FROM profiles WHERE id = $1', [decoded.userId])
+    const role = roleRes.rows?.[0]?.role
+    if (role === 'admin') {
+      return NextResponse.json(
+        { error: 'Admins cannot submit leave requests' },
+        { status: 403 }
+      )
+    }
+
 
     const body = await request.json()
     const { startDate, endDate, reason } = body
@@ -74,8 +84,8 @@ export async function POST(request: NextRequest) {
     // Check if user has enough leave balance
     const currentYear = new Date().getFullYear()
     const balanceResult = await db.query(`
-      SELECT days_allocated, days_used 
-      FROM leave_balances 
+      SELECT days_allocated, days_used
+      FROM leave_balances
       WHERE user_id = $1 AND year = $2
     `, [decoded.userId, currentYear])
 
@@ -98,8 +108,8 @@ export async function POST(request: NextRequest) {
 
     // Check for overlapping leave requests
     const overlapResult = await db.query(`
-      SELECT id FROM leave_requests 
-      WHERE user_id = $1 
+      SELECT id FROM leave_requests
+      WHERE user_id = $1
         AND status IN ('pending', 'approved')
         AND (
           (start_date <= $2 AND end_date >= $2) OR

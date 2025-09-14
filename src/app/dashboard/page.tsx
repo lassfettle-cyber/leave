@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import LeaveRequestForm from '@/components/LeaveRequestForm'
-import type { PendingRequest, UpcomingLeave, UserWithRemainingLeave } from '@/types/database'
+import type { PendingRequest, UpcomingLeave } from '@/types/database'
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
   const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeave[]>([])
-  const [usersWithLeave, setUsersWithLeave] = useState<UserWithRemainingLeave[]>([])
+  const [approvedLeaves, setApprovedLeaves] = useState<any[]>([])
+  const [reminders, setReminders] = useState<any[]>([])
   const [stats, setStats] = useState({
     pendingRequests: 0,
     approvedThisMonth: 0,
@@ -45,10 +46,11 @@ export default function DashboardPage() {
       // Load different data based on user role
       if (user?.profile?.role === 'admin') {
         // Admin dashboard data
-        const [pendingRes, upcomingRes, usersRes, statsRes] = await Promise.all([
+        const [pendingRes, upcomingRes, approvedRes, remindersRes, statsRes] = await Promise.all([
           fetch('/api/dashboard/pending-requests', { headers }),
           fetch('/api/dashboard/upcoming-leave', { headers }),
-          fetch('/api/dashboard/users-with-leave', { headers }),
+          fetch('/api/dashboard/approved-leave', { headers }),
+          fetch('/api/dashboard/reminders', { headers }),
           fetch('/api/dashboard/stats', { headers })
         ])
 
@@ -62,9 +64,14 @@ export default function DashboardPage() {
           if (result.success) setUpcomingLeave(result.data)
         }
 
-        if (usersRes.ok) {
-          const result = await usersRes.json()
-          if (result.success) setUsersWithLeave(result.data)
+        if (approvedRes.ok) {
+          const result = await approvedRes.json()
+          if (result.success) setApprovedLeaves(result.data)
+        }
+
+        if (remindersRes.ok) {
+          const result = await remindersRes.json()
+          if (result.success) setReminders(result.data)
         }
 
         if (statsRes.ok) {
@@ -163,7 +170,8 @@ export default function DashboardPage() {
     return <AdminDashboard
       pendingRequests={pendingRequests}
       upcomingLeave={upcomingLeave}
-      usersWithLeave={usersWithLeave}
+      approvedLeaves={approvedLeaves}
+      reminders={reminders}
       stats={stats}
       actionLoading={actionLoading}
       onApprove={handleApprove}
@@ -178,7 +186,8 @@ export default function DashboardPage() {
 function AdminDashboard({
   pendingRequests,
   upcomingLeave,
-  usersWithLeave,
+  approvedLeaves,
+  reminders,
   stats,
   actionLoading,
   onApprove,
@@ -186,7 +195,8 @@ function AdminDashboard({
 }: {
   pendingRequests: PendingRequest[]
   upcomingLeave: UpcomingLeave[]
-  usersWithLeave: UserWithRemainingLeave[]
+  approvedLeaves: any[]
+  reminders: any[]
   stats: any
   actionLoading: string | null
   onApprove: (id: string) => void
@@ -330,46 +340,44 @@ function AdminDashboard({
         </div>
       </div>
 
-      {/* Users with Leave Days & Quick Actions */}
+      {/* Approved Leaves & Reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Users with Leave Days */}
+        {/* Approved Leaves */}
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Users with Leave Days
-            </h2>
-            <button className="text-sm text-blue-600 hover:text-blue-800">
-              Send Reminders
-            </button>
-          </div>
-          {usersWithLeave.length === 0 ? (
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Approved Leaves
+          </h2>
+          {approvedLeaves.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              No users with remaining leave days
+              No approved leave found
             </p>
           ) : (
             <div className="space-y-3">
-              {usersWithLeave.slice(0, 5).map((user) => (
+              {approvedLeaves.slice(0, 5).map((leave) => (
                 <div
-                  key={user.id}
+                  key={leave.id}
                   className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
                 >
                   <div>
                     <p className="font-medium text-gray-900">
-                      {user.full_name}
+                      {leave.full_name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {user.days_remaining} days remaining
+                      {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {leave.days} day{leave.days !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  <button className="text-green-600 hover:text-green-800 text-sm">
-                    Remind
-                  </button>
+                  <div className="text-green-700 text-sm font-medium">
+                    Approved
+                  </div>
                 </div>
               ))}
-              {usersWithLeave.length > 5 && (
+              {approvedLeaves.length > 5 && (
                 <div className="text-center">
                   <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    View all users →
+                    View all approved →
                   </button>
                 </div>
               )}
@@ -377,31 +385,34 @@ function AdminDashboard({
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Reminders */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
-          <div className="space-y-3">
-            <QuickActionButton
-              title="Add New Employee"
-              description="Invite a new employee to the system"
-              icon="➕"
-              href="/dashboard/users"
-            />
-            <QuickActionButton
-              title="View All Requests"
-              description="Manage all leave requests"
-              icon="📋"
-              href="/dashboard/leave-requests"
-            />
-            <QuickActionButton
-              title="System Settings"
-              description="Configure leave policies"
-              icon="⚙️"
-              href="/dashboard/settings"
-            />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Employees to Remind</h2>
           </div>
+          {reminders.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No reminders at the moment</p>
+          ) : (
+            <div className="space-y-3">
+              {reminders.slice(0, 5).map((item) => (
+                <div key={item.request_id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{item.full_name}</p>
+                    <p className="text-sm text-gray-600">
+                      {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-yellow-700">{item.reason}</p>
+                  </div>
+                  <button className="text-yellow-700 hover:text-yellow-800 text-sm">Remind</button>
+                </div>
+              ))}
+              {reminders.length > 5 && (
+                <div className="text-center">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm">View all reminders →</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
