@@ -395,13 +395,13 @@ function AdminDashboard({
           ) : (
             <div className="space-y-3">
               {reminders.slice(0, 5).map((item) => (
-                <div key={item.request_id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <div key={item.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900">{item.full_name}</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
+                      {item.days_remaining} day{item.days_remaining !== 1 ? 's' : ''} remaining
                     </p>
-                    <p className="text-xs text-yellow-700">{item.reason}</p>
+                    <p className="text-xs text-yellow-700">Remind to apply for remaining leave days</p>
                   </div>
                   <button className="text-yellow-700 hover:text-yellow-800 text-sm">Remind</button>
                 </div>

@@ -9,7 +9,6 @@ const adminNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'Profile', href: '/dashboard/profile', icon: '👤' },
   { name: 'User Management', href: '/dashboard/users', icon: '👥' },
-  { name: 'Leave Management', href: '/dashboard/leave-requests', icon: '📅' },
   { name: 'Leave Calendar', href: '/dashboard/calendar', icon: '🗓️' },
   { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
 ]
