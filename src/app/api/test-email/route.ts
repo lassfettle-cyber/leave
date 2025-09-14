@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000)
     })
 
-    return NextResponse.json({ success: result.success, error: result.error || null, provider: process.env.BREVO_API_KEY ? 'brevo' : 'smtp' })
+    return NextResponse.json({ success: result.success, error: result.error || null, provider: process.env.BREVO_API_KEY ? 'brevo' : 'smtp', messageId: result.messageId || null })
   } catch (err: any) {
     console.error('test-email error:', err)
     return NextResponse.json({ success: false, error: err?.message || 'Failed to send test email' }, { status: 500 })

@@ -10,7 +10,7 @@ const smtpPort = Number(process.env.SMTP_PORT || 587)
 const smtpUser = process.env.SMTP_USER
 const smtpPass = process.env.SMTP_PASS
 
-async function smtpSend(to: string, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }> {
+async function smtpSend(to: string, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
     if (!smtpUser || !smtpPass) {
       console.warn('SMTP credentials not configured, skipping email send')
@@ -50,7 +50,7 @@ async function smtpSend(to: string, subject: string, html: string, text: string)
   }
 }
 
-async function brevoApiSend(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }>{
+async function brevoApiSend(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string; messageId?: string }>{
   try {
     const apiKey = process.env.BREVO_API_KEY
     if (!apiKey) return { success: false, error: 'BREVO_API_KEY not set' }
@@ -77,14 +77,21 @@ async function brevoApiSend(to: string, toName: string | undefined, subject: str
       return { success: false, error: `Brevo API error ${res.status}` }
     }
 
-    return { success: true }
+    // Parse Brevo response for messageId
+    let bodyText = ''
+    try { bodyText = await res.text() } catch {}
+    let json: any
+    try { json = bodyText ? JSON.parse(bodyText) : undefined } catch {}
+    const messageId: string | undefined = json?.messageId || (Array.isArray(json?.messageIds) ? json.messageIds[0] : undefined)
+    console.log('Brevo API success:', res.status, json || bodyText)
+    return { success: true, messageId }
   } catch (err: any) {
     console.error('Brevo API send error:', err)
     return { success: false, error: err?.message || 'Brevo API send failed' }
   }
 }
 
-async function sendEmail(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }> {
+async function sendEmail(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   if (process.env.BREVO_API_KEY) {
     return brevoApiSend(to, toName, subject, html, text)
   }
@@ -111,7 +118,7 @@ export interface ResetEmailData {
 
 
 export const emailService = {
-  async sendInviteEmail(data: InviteEmailData): Promise<{ success: boolean; error?: string }> {
+  async sendInviteEmail(data: InviteEmailData): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const expirationTime = data.expiresAt.toLocaleString()
@@ -132,7 +139,7 @@ export const emailService = {
       return { success: false, error: 'Failed to send email' }
     }
   },
-  async sendPasswordResetEmail(data: ResetEmailData): Promise<{ success: boolean; error?: string }> {
+  async sendPasswordResetEmail(data: ResetEmailData): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
       const expirationTime = data.expiresAt.toLocaleString()
 
