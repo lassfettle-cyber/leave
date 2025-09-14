@@ -182,6 +182,10 @@ export const emailService = {
 }
 
 function generateInviteEmailHTML(data: InviteEmailData, appUrl: string, expirationTime: string): string {
+  const base = appUrl.replace(/\/+$/, '')
+  const u = new URL('/register', base)
+  u.searchParams.set('email', data.email)
+  const registerUrl = u.toString()
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -203,7 +207,7 @@ function generateInviteEmailHTML(data: InviteEmailData, appUrl: string, expirati
         <p>You have been invited to join our Leave Management System as a <strong>${data.role}</strong>. Use the One-Time Password (OTP) below to complete your registration.</p>
         <div class="otp">${data.otpCode}</div>
         <p style="text-align:center;">
-          <a href="${appUrl}/register?email=${encodeURIComponent(data.email)}" class="btn">Complete Registration</a>
+          <a href="${registerUrl}" class="btn">Complete Registration</a>
         </p>
         <p style="color:#6b7280;font-size:14px;">This invitation expires on <strong>${expirationTime}</strong>.</p>
       </div>
@@ -213,6 +217,10 @@ function generateInviteEmailHTML(data: InviteEmailData, appUrl: string, expirati
 }
 
 function generateInviteEmailText(data: InviteEmailData, appUrl: string, expirationTime: string): string {
+  const base = appUrl.replace(/\/+$/, '')
+  const u = new URL('/register', base)
+  u.searchParams.set('email', data.email)
+  const registerUrl = u.toString()
   return `
 Leave Management System - Invitation
 
@@ -223,7 +231,7 @@ You have been invited to join our Leave Management System as a ${data.role}.
 Your OTP Code: ${data.otpCode}
 
 To complete your registration:
-1. Visit: ${appUrl}/register?email=${encodeURIComponent(data.email)}
+1. Visit: ${registerUrl}
 2. Enter your email address and the OTP code: ${data.otpCode}
 3. Set up your password and complete your profile
 4. Start managing your leave requests!
