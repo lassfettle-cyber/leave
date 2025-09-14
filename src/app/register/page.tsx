@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
+import PasswordInput from '@/components/PasswordInput'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -213,13 +214,11 @@ export default function RegisterPage() {
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                     Password
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     id="password"
                     name="password"
                     value={profileData.password}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                     minLength={6}
                   />
@@ -230,13 +229,11 @@ export default function RegisterPage() {
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                     Confirm Password
                   </label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     id="confirmPassword"
                     name="confirmPassword"
                     value={profileData.confirmPassword}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>

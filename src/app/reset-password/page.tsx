@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import PasswordInput from '@/components/PasswordInput'
+
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -107,22 +109,20 @@ export default function ResetPasswordPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-              <input
-                type="password"
+              <PasswordInput
+                id="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
-              <input
-                type="password"
+              <PasswordInput
+                id="confirm-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             {error && (
