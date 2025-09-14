@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import DateRangePicker from './DateRangePicker'
 
 interface LeaveRequestFormProps {
   onSuccess: () => void
@@ -17,22 +18,45 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
   })
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   const [holidays, setHolidays] = useState<Array<{ holiday_date: string; name: string }>>([])
+  const [disabledDates, setDisabledDates] = useState<Set<string>>(new Set())
 
-  // Load settings to reflect accurate working day preview
+  // Load settings and user's existing leave to build disabled calendar dates
   useEffect(() => {
     (async () => {
       try {
         const token = localStorage.getItem('auth_token')
         if (!token) return
-        const res = await fetch('/api/settings/leave', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        const data = await res.json()
-        if (res.ok && data.success) {
-          setExcludedWeekdays(data.settings?.excluded_weekdays || [])
-          setHolidays(data.holidays || [])
+        // Fetch settings
+        const [resSettings, resMyLeave] = await Promise.all([
+          fetch('/api/settings/leave', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/employee/my-leave', { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        const dataSettings = await resSettings.json()
+        if (resSettings.ok && dataSettings.success) {
+          setExcludedWeekdays(dataSettings.settings?.excluded_weekdays || [])
+          setHolidays(dataSettings.holidays || [])
         }
-      } catch {}
+        const dataMyLeave = await resMyLeave.json()
+        if (resMyLeave.ok && dataMyLeave.success) {
+          const disabled = new Set<string>()
+          const requests = (dataMyLeave.leaveRequests || []) as Array<{ start_date: string; end_date: string; status: string }>
+          const active = requests.filter(r => r.status === 'pending' || r.status === 'approved')
+          for (const r of active) {
+            const s = new Date(r.start_date)
+            const e = new Date(r.end_date)
+            // iterate inclusive range in UTC
+            const cur = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()))
+            const end = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate()))
+            while (cur.getTime() <= end.getTime()) {
+              disabled.add(cur.toISOString().split('T')[0])
+              cur.setUTCDate(cur.getUTCDate() + 1)
+            }
+          }
+          setDisabledDates(disabled)
+        }
+      } catch {
+        // ignore
+      }
     })()
   }, [])
 
@@ -147,34 +171,15 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                Start Date
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select date range
               </label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                min={new Date().toISOString().split('T')[0]}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                End Date
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                min={formData.startDate || new Date().toISOString().split('T')[0]}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
+              <DateRangePicker
+                startDate={formData.startDate || undefined}
+                endDate={formData.endDate || undefined}
+                onChange={(s, e) => setFormData(prev => ({ ...prev, startDate: s || '', endDate: e || '' }))}
+                disabledDates={disabledDates}
+                minDate={new Date().toISOString().split('T')[0]}
               />
             </div>
 
@@ -215,7 +220,7 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !formData.startDate || !formData.endDate}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Submitting...' : 'Submit Request'}
