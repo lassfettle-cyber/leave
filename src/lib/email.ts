@@ -50,42 +50,43 @@ async function smtpSend(to: string, subject: string, html: string, text: string)
   }
 }
 
-async function msApiSend(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }>{
+async function brevoApiSend(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }>{
   try {
-    const token = process.env.MAILERSEND_API_TOKEN
-    if (!token) return { success: false, error: 'MAILERSEND_API_TOKEN not set' }
+    const apiKey = process.env.BREVO_API_KEY
+    if (!apiKey) return { success: false, error: 'BREVO_API_KEY not set' }
 
-    const res = await fetch('https://api.mailersend.com/v1/email', {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        'accept': 'application/json'
       },
       body: JSON.stringify({
-        from: { email: fromEmail, name: fromName },
+        sender: { email: fromEmail, name: fromName },
         to: [{ email: to, name: toName }],
         subject,
-        text,
-        html
+        htmlContent: html,
+        textContent: text
       })
     })
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
-      console.error('MailerSend API error:', res.status, errText)
-      return { success: false, error: `MailerSend API error ${res.status}` }
+      console.error('Brevo API error:', res.status, errText)
+      return { success: false, error: `Brevo API error ${res.status}` }
     }
 
     return { success: true }
   } catch (err: any) {
-    console.error('MailerSend API send error:', err)
-    return { success: false, error: err?.message || 'MailerSend API send failed' }
+    console.error('Brevo API send error:', err)
+    return { success: false, error: err?.message || 'Brevo API send failed' }
   }
 }
 
 async function sendEmail(to: string, toName: string | undefined, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string }> {
-  if (process.env.MAILERSEND_API_TOKEN) {
-    return msApiSend(to, toName, subject, html, text)
+  if (process.env.BREVO_API_KEY) {
+    return brevoApiSend(to, toName, subject, html, text)
   }
   return smtpSend(to, subject, html, text)
 }
