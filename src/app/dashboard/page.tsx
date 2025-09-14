@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import LeaveRequestForm from '@/components/LeaveRequestForm'
 import type { PendingRequest, UpcomingLeave, UserWithRemainingLeave } from '@/types/database'
 
 export default function DashboardPage() {
@@ -418,6 +420,7 @@ function EmployeeDashboard() {
   const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeave[]>([])
   const [myLeave, setMyLeave] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showRequestForm, setShowRequestForm] = useState(false)
 
   useEffect(() => {
     loadEmployeeData()
@@ -519,6 +522,7 @@ function EmployeeDashboard() {
                 : 'bg-gray-50 cursor-not-allowed'
             }`}
             disabled={balance.daysRemaining === 0}
+            onClick={() => setShowRequestForm(true)}
           >
             <div className="text-2xl mr-3">➕</div>
             <div className="text-left">
@@ -531,13 +535,13 @@ function EmployeeDashboard() {
               </p>
             </div>
           </button>
-          <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+          <Link href="/dashboard/leave-requests" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
             <div className="text-2xl mr-3">📊</div>
             <div className="text-left">
               <h3 className="font-medium text-gray-900">View My Leave</h3>
               <p className="text-sm text-gray-600">See all your leave requests</p>
             </div>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -634,16 +638,28 @@ function EmployeeDashboard() {
           )}
         </div>
       </div>
+
+      {/* Request Form Modal */}
+      {showRequestForm && (
+        <LeaveRequestForm
+          onSuccess={() => {
+            setShowRequestForm(false)
+            loadEmployeeData()
+          }}
+          onCancel={() => setShowRequestForm(false)}
+        />
+      )}
+
     </div>
   )
 }
 
-function StatsCard({ 
-  title, 
-  value, 
-  icon, 
-  color 
-}: { 
+function StatsCard({
+  title,
+  value,
+  icon,
+  color
+}: {
   title: string
   value: string | number
   icon: string
@@ -671,12 +687,12 @@ function StatsCard({
   )
 }
 
-function QuickActionButton({ 
-  title, 
-  description, 
-  icon, 
-  href 
-}: { 
+function QuickActionButton({
+  title,
+  description,
+  icon,
+  href
+}: {
   title: string
   description: string
   icon: string
