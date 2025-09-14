@@ -154,16 +154,20 @@ function calculateWorkingDays(
   excludedWeekdays: number[] = [],
   holidaySet: Set<string> = new Set()
 ): number {
-  let count = 0
-  const current = new Date(startDate)
+  // Work in UTC to avoid timezone-related off-by-one and wrong weekday calculations
+  const startUTC = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
+  const endUTC = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
 
-  while (current <= endDate) {
-    const dayOfWeek = current.getDay() // 0=Sun..6=Sat
+  let count = 0
+  const current = new Date(startUTC)
+
+  while (current.getTime() <= endUTC.getTime()) {
+    const dayOfWeek = current.getUTCDay() // 0=Sun..6=Sat (UTC)
     const dateString = current.toISOString().split('T')[0]
     if (!excludedWeekdays.includes(dayOfWeek) && !holidaySet.has(dateString)) {
       count++
     }
-    current.setDate(current.getDate() + 1)
+    current.setUTCDate(current.getUTCDate() + 1)
   }
 
   return count
