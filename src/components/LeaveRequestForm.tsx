@@ -81,18 +81,20 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
   // Calculate working days for preview using settings (excluded weekdays and holidays)
   const calculateWorkingDays = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0
-    const start = new Date(startDate)
-    const end = new Date(endDate)
+    const s = new Date(startDate)
+    const e = new Date(endDate)
+    const startUTC = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()))
+    const endUTC = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate()))
     let count = 0
-    const current = new Date(start)
+    const current = new Date(startUTC)
     const holidaySet = new Set(holidays.map((h) => h.holiday_date))
-    while (current <= end) {
-      const dayOfWeek = current.getDay() // 0=Sun..6=Sat
+    while (current.getTime() <= endUTC.getTime()) {
+      const dayOfWeek = current.getUTCDay() // 0=Sun..6=Sat
       const dateStr = current.toISOString().split('T')[0]
       if (!excludedWeekdays.includes(dayOfWeek) && !holidaySet.has(dateStr)) {
         count++
       }
-      current.setDate(current.getDate() + 1)
+      current.setUTCDate(current.getUTCDate() + 1)
     }
     return count
   }
@@ -103,19 +105,21 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
   const excludedSummary = useMemo(() => {
     const { startDate, endDate } = formData
     if (!startDate || !endDate) return ''
-    const start = new Date(startDate)
-    const end = new Date(endDate)
+    const s = new Date(startDate)
+    const e = new Date(endDate)
+    const startUTC = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()))
+    const endUTC = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate()))
 
-    // Weekday names aligned with getDay()
+    // Weekday names aligned with getUTCDay()
     const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 
     // Which excluded weekdays actually occur in the selected range
     const occurred = new Set<number>()
-    const d = new Date(start)
-    while (d <= end) {
-      const dow = d.getDay()
+    const d = new Date(startUTC)
+    while (d.getTime() <= endUTC.getTime()) {
+      const dow = d.getUTCDay()
       if (excludedWeekdays.includes(dow)) occurred.add(dow)
-      d.setDate(d.getDate() + 1)
+      d.setUTCDate(d.getUTCDate() + 1)
     }
     const occurredWeekdayNames = Array.from(occurred).sort((a,b)=>a-b).map(i => weekdayNames[i])
 

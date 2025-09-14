@@ -45,8 +45,6 @@ async function requireAdmin(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const admin = await requireAdmin(request)
-  if ('error' in admin) return admin.error
 
   try {
     // Ensure schema and a settings row exist
