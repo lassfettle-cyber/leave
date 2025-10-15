@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
       // Create the user profile
       await db.query(`
         INSERT INTO profiles (
-          id, email, first_name, last_name, phone, password_hash, role, leave_cycle_start
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          id, email, first_name, last_name, phone, password_hash, role, position, leave_cycle_start
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `, [
         userId,
         invite.email,
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
         invite.phone,
         passwordHash,
         invite.role,
+        invite.position,
         leaveCycleStart
       ])
 

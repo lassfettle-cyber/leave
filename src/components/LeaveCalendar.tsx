@@ -42,7 +42,8 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
   const [leaveBlocks, setLeaveBlocks] = useState<LeaveBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [currentDate, setCurrentDate] = useState(new Date())
+  // Initialize to 2026
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1))
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   const [holidaysByDate, setHolidaysByDate] = useState<Record<string, string>>({})
   const holidaySet = useMemo(() => new Set(Object.keys(holidaysByDate)), [holidaysByDate])
@@ -136,6 +137,17 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
       newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7))
     } else {
       newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1))
+    }
+
+    // Limit to 2026 only
+    if (newDate.getFullYear() < 2026) {
+      newDate.setFullYear(2026)
+      newDate.setMonth(0)
+      newDate.setDate(1)
+    } else if (newDate.getFullYear() > 2026) {
+      newDate.setFullYear(2026)
+      newDate.setMonth(11)
+      newDate.setDate(31)
     }
 
     setCurrentDate(newDate)

@@ -59,6 +59,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Enforce 2026 calendar year only
+    const startYear = start.getFullYear()
+    const endYear = end.getFullYear()
+    if (startYear !== 2026 || endYear !== 2026) {
+      return NextResponse.json(
+        { error: 'Leave requests are only allowed for the year 2026' },
+        { status: 400 }
+      )
+    }
+
+    // Enforce minimum 14 consecutive days
+    const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    if (daysDiff < 14) {
+      return NextResponse.json(
+        { error: 'Minimum booking is 14 consecutive days' },
+        { status: 400 }
+      )
+    }
+
     // Load settings and holidays to compute working days
     const settingsRes = await db.query(`SELECT excluded_weekdays FROM public.leave_settings WHERE id = 1`)
     const excludedWeekdays: number[] = settingsRes.rows?.[0]?.excluded_weekdays || []
@@ -125,6 +144,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get user's position
+    const positionRes = await db.query('SELECT position FROM profiles WHERE id = $1', [decoded.userId])
+    const userPosition = positionRes.rows?.[0]?.position
+
+    if (!userPosition) {
+      return NextResponse.json(
+        { error: 'User position not set. Please contact administrator.' },
+        { status: 400 }
+      )
+    }
+
+    // Check position limits for each day in the requested range (max 5 captains, max 5 first officers per day)
+    const positionCheckResult = await checkPositionLimits(startDate, endDate, userPosition, decoded.userId)
+    if (!positionCheckResult.allowed) {
+      return NextResponse.json(
+        { error: positionCheckResult.error },
+        { status: 400 }
+      )
+    }
+
     // Create the leave request
     const result = await db.query(`
       INSERT INTO leave_requests (
@@ -157,14 +196,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to calculate working days excluding configured weekdays and holidays
+// Helper function to calculate working days - leave runs 7 days/week, only exclude holidays
 function calculateWorkingDays(
   startDate: Date,
   endDate: Date,
   excludedWeekdays: number[] = [],
   holidaySet: Set<string> = new Set()
 ): number {
-  // Work in UTC to avoid timezone-related off-by-one and wrong weekday calculations
+  // Work in UTC to avoid timezone-related off-by-one calculations
   const startUTC = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
   const endUTC = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
 
@@ -172,13 +211,70 @@ function calculateWorkingDays(
   const current = new Date(startUTC)
 
   while (current.getTime() <= endUTC.getTime()) {
-    const dayOfWeek = current.getUTCDay() // 0=Sun..6=Sat (UTC)
     const dateString = current.toISOString().split('T')[0]
-    if (!excludedWeekdays.includes(dayOfWeek) && !holidaySet.has(dateString)) {
+    // Count all days except holidays (leave runs 7 days/week)
+    if (!holidaySet.has(dateString)) {
       count++
     }
     current.setUTCDate(current.getUTCDate() + 1)
   }
 
   return count
+}
+
+// Helper function to check position limits (max 5 total employees per day)
+async function checkPositionLimits(
+  startDate: string,
+  endDate: string,
+  userPosition: 'captain' | 'first_officer',
+  userId: string
+): Promise<{ allowed: boolean; error?: string }> {
+  // Get all approved leave requests that overlap with the requested dates
+  const result = await db.query(`
+    SELECT lr.start_date, lr.end_date, p.position
+    FROM leave_requests lr
+    JOIN profiles p ON lr.user_id = p.id
+    WHERE lr.status = 'approved'
+      AND lr.user_id != $1
+      AND lr.start_date <= $3::date
+      AND lr.end_date >= $2::date
+      AND p.position IS NOT NULL
+  `, [userId, startDate, endDate])
+
+  // Build a map of date -> total count
+  const countByDate: Record<string, number> = {}
+
+  for (const row of result.rows) {
+    const leaveStart = new Date(row.start_date)
+    const leaveEnd = new Date(row.end_date)
+
+    // Iterate through each day of this leave request
+    const current = new Date(leaveStart)
+    while (current <= leaveEnd) {
+      const dateStr = current.toISOString().split('T')[0]
+      countByDate[dateStr] = (countByDate[dateStr] || 0) + 1
+      current.setDate(current.getDate() + 1)
+    }
+  }
+
+  // Check each day in the requested range - max 5 total employees per day
+  const reqStart = new Date(startDate)
+  const reqEnd = new Date(endDate)
+  const current = new Date(reqStart)
+
+  while (current <= reqEnd) {
+    const dateStr = current.toISOString().split('T')[0]
+    const count = countByDate[dateStr] || 0
+
+    if (count >= 5) {
+      return {
+        allowed: false,
+        error: `Maximum of 5 employees already on leave on ${dateStr}. Please select different dates.`
+      }
+    }
+
+    current.setDate(current.getDate() + 1)
+  }
+
+  return { allowed: true }
 }

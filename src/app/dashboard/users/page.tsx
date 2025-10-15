@@ -19,6 +19,7 @@ export default function UserManagementPage() {
     lastName: '',
     phone: '',
     role: 'employee' as 'admin' | 'employee',
+    position: 'captain' as 'captain' | 'first_officer',
     daysAllocated: 25
   })
   const [showEditForm, setShowEditForm] = useState(false)
@@ -108,6 +109,7 @@ export default function UserManagementPage() {
           lastName: '',
           phone: '',
           role: 'employee',
+          position: 'captain',
           daysAllocated: 25
         })
         loadData() // Refresh data
@@ -670,19 +672,34 @@ export default function UserManagementPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Leave Days
+                      Position *
                     </label>
-                    <input
-                      type="number"
-                      name="daysAllocated"
-                      value={inviteData.daysAllocated}
+                    <select
+                      name="position"
+                      value={inviteData.position}
                       onChange={handleInputChange}
-                      min="0"
-                      max="365"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                    />
+                    >
+                      <option value="captain">Captain</option>
+                      <option value="first_officer">First Officer</option>
+                    </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Leave Days
+                  </label>
+                  <input
+                    type="number"
+                    name="daysAllocated"
+                    value={inviteData.daysAllocated}
+                    onChange={handleInputChange}
+                    min="0"
+                    max="365"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <button

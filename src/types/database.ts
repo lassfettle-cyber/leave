@@ -7,6 +7,7 @@ export interface Profile {
   email: string
   password_hash?: string
   role: 'admin' | 'employee'
+  position?: 'captain' | 'first_officer'
   leave_cycle_start: string
   created_at: string
   updated_at: string
@@ -53,6 +54,7 @@ export interface Invite {
   last_name: string
   phone: string
   role: 'admin' | 'employee'
+  position?: 'captain' | 'first_officer'
   days_allocated: number
   otp_code: string
   expires_at: string
@@ -68,6 +70,7 @@ export interface PendingRequest extends LeaveRequest {
   last_name: string
   full_name: string
   role: string
+  position?: 'captain' | 'first_officer'
 }
 
 export interface UserWithRemainingLeave {

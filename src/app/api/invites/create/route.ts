@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, firstName, lastName, phone, role, daysAllocated } = body
+    const { email, firstName, lastName, phone, role, position, daysAllocated } = body
 
     // Validate required fields
-    if (!email || !firstName || !lastName || !phone || !role || daysAllocated === undefined) {
+    if (!email || !firstName || !lastName || !phone || !role || !position || daysAllocated === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields (email, firstName, lastName, phone, role, position, daysAllocated)' },
         { status: 400 }
       )
     }
@@ -92,16 +92,17 @@ export async function POST(request: NextRequest) {
     // Create invite
     const result = await db.query(`
       INSERT INTO invites (
-        email, 
-        first_name, 
-        last_name, 
-        phone, 
-        role, 
-        days_allocated, 
-        otp_code, 
+        email,
+        first_name,
+        last_name,
+        phone,
+        role,
+        position,
+        days_allocated,
+        otp_code,
         expires_at,
         created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `, [
       email,
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       lastName,
       phone,
       role,
+      position,
       daysAllocated,
       otpCode,
       expiresAt,

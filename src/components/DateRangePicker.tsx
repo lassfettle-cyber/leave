@@ -41,7 +41,9 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
 
   const [cursor, setCursor] = useState(() => {
     const base = startDate ? new Date(startDate) : new Date()
-    return { year: base.getUTCFullYear(), month: base.getUTCMonth() }
+    // Limit to 2026
+    const year = base.getUTCFullYear() === 2026 ? 2026 : 2026
+    return { year, month: base.getUTCMonth() }
   })
 
   const start = startDate ? toDateOnly(new Date(startDate)) : undefined
@@ -50,6 +52,8 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
 
   const isDisabled = (d: Date) => {
     const s = fmt(d)
+    // Disable dates outside 2026
+    if (d.getUTCFullYear() !== 2026) return true
     if (isBefore(d, minD)) return true
     return disabled.has(s)
   }
@@ -76,6 +80,14 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
     }
     // ensure no disabled day in range
     if (rangeHasDisabled(start, d)) return
+
+    // Enforce minimum 14 consecutive days
+    const daysDiff = Math.ceil((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    if (daysDiff < 14) {
+      alert('Minimum booking is 14 consecutive days')
+      return
+    }
+
     onChange(fmt(start), fmt(d))
   }
 
@@ -120,19 +132,33 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <button type="button" className="px-2 py-1 rounded border hover:bg-gray-50" onClick={() => {
-          const m = cursor.month - 1
-          const y = m < 0 ? cursor.year - 1 : cursor.year
-          const nm = (m + 12) % 12
-          setCursor({ year: y, month: nm })
-        }}>‹</button>
+        <button
+          type="button"
+          className="px-2 py-1 rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={cursor.year === 2026 && cursor.month === 0}
+          onClick={() => {
+            const m = cursor.month - 1
+            if (m < 0 && cursor.year === 2026) return // Don't go before Jan 2026
+            const y = m < 0 ? cursor.year - 1 : cursor.year
+            const nm = (m + 12) % 12
+            if (y < 2026) return // Don't go before 2026
+            setCursor({ year: y, month: nm })
+          }}
+        >‹</button>
         <div className="font-medium">{monthNames[cursor.month]} {cursor.year}</div>
-        <button type="button" className="px-2 py-1 rounded border hover:bg-gray-50" onClick={() => {
-          const m = cursor.month + 1
-          const y = m > 11 ? cursor.year + 1 : cursor.year
-          const nm = m % 12
-          setCursor({ year: y, month: nm })
-        }}>›</button>
+        <button
+          type="button"
+          className="px-2 py-1 rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={cursor.year === 2026 && cursor.month === 11}
+          onClick={() => {
+            const m = cursor.month + 1
+            if (m > 11 && cursor.year === 2026) return // Don't go after Dec 2026
+            const y = m > 11 ? cursor.year + 1 : cursor.year
+            const nm = m % 12
+            if (y > 2026) return // Don't go after 2026
+            setCursor({ year: y, month: nm })
+          }}
+        >›</button>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-xs text-gray-500">

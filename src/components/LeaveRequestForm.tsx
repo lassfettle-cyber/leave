@@ -102,7 +102,7 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // Calculate working days for preview using settings (excluded weekdays and holidays)
+  // Calculate working days for preview - leave runs 7 days a week, only exclude holidays
   const calculateWorkingDays = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0
     const s = new Date(startDate)
@@ -113,9 +113,9 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
     const current = new Date(startUTC)
     const holidaySet = new Set(holidays.map((h) => h.holiday_date))
     while (current.getTime() <= endUTC.getTime()) {
-      const dayOfWeek = current.getUTCDay() // 0=Sun..6=Sat
       const dateStr = current.toISOString().split('T')[0]
-      if (!excludedWeekdays.includes(dayOfWeek) && !holidaySet.has(dateStr)) {
+      // Count all days except holidays (leave runs 7 days/week)
+      if (!holidaySet.has(dateStr)) {
         count++
       }
       current.setUTCDate(current.getUTCDate() + 1)
