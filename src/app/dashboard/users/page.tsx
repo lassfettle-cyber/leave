@@ -284,6 +284,44 @@ export default function UserManagementPage() {
     }
   }
 
+  const handleDeleteUser = async (u: Profile) => {
+    const confirmMessage = `⚠️ WARNING: This action cannot be undone!\n\nYou are about to permanently delete:\n\nUser: ${u.first_name} ${u.last_name}\nEmail: ${u.email}\n\nThis will also delete:\n• All leave applications (pending, approved, denied)\n• Leave balance history\n• All user data\n\nType the user's email to confirm deletion:`
+
+    const userInput = prompt(confirmMessage)
+
+    if (userInput !== u.email) {
+      if (userInput !== null) {
+        alert('Email does not match. Deletion cancelled.')
+      }
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch(`/api/users/${u.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const result = await response.json()
+      if (response.ok && result.success) {
+        setSuccess(result.message)
+        loadData()
+      } else {
+        setError(result.error || 'Failed to delete user')
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err)
+      setError('An error occurred while deleting user')
+    }
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setInviteData(prev => ({
@@ -417,6 +455,7 @@ export default function UserManagementPage() {
                       <div className="flex space-x-3">
                         <button onClick={() => openEdit(user)} className="text-blue-600 hover:text-blue-900">Edit</button>
                         <button onClick={() => openAllocation(user)} className="text-indigo-600 hover:text-indigo-900">Add Allocation</button>
+                        <button onClick={() => handleDeleteUser(user)} className="text-red-600 hover:text-red-900 font-medium">Delete</button>
                       </div>
                     </td>
                   </tr>

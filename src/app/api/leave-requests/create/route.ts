@@ -69,13 +69,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Enforce minimum 14 consecutive days
-    const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    if (daysDiff < 14) {
-      return NextResponse.json(
-        { error: 'Minimum booking is 14 consecutive days' },
-        { status: 400 }
-      )
+    // Enforce minimum 14 consecutive days for first application only
+    // Check if user has any approved leave requests with 14+ days
+    const approvedLeaveCheck = await db.query(`
+      SELECT id, days
+      FROM leave_requests
+      WHERE user_id = $1
+        AND status = 'approved'
+        AND days >= 14
+      LIMIT 1
+    `, [decoded.userId])
+
+    const hasApproved14DayLeave = approvedLeaveCheck.rows.length > 0
+
+    if (!hasApproved14DayLeave) {
+      // This is the first application (or previous 14+ day leave was deleted/denied)
+      const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      if (daysDiff < 14) {
+        return NextResponse.json(
+          { error: 'First leave application must be a minimum of 14 consecutive days' },
+          { status: 400 }
+        )
+      }
     }
 
     // Load settings and holidays to compute working days
@@ -222,7 +237,7 @@ function calculateWorkingDays(
   return count
 }
 
-// Helper function to check position limits (max 5 total employees per day)
+// Helper function to check position limits (max 5 captains AND 5 first officers per day)
 async function checkPositionLimits(
   startDate: string,
   endDate: string,
@@ -241,35 +256,53 @@ async function checkPositionLimits(
       AND p.position IS NOT NULL
   `, [userId, startDate, endDate])
 
-  // Build a map of date -> total count
-  const countByDate: Record<string, number> = {}
+  // Build maps of date -> count by position
+  const captainCountByDate: Record<string, number> = {}
+  const firstOfficerCountByDate: Record<string, number> = {}
 
   for (const row of result.rows) {
     const leaveStart = new Date(row.start_date)
     const leaveEnd = new Date(row.end_date)
+    const position = row.position
 
     // Iterate through each day of this leave request
     const current = new Date(leaveStart)
     while (current <= leaveEnd) {
       const dateStr = current.toISOString().split('T')[0]
-      countByDate[dateStr] = (countByDate[dateStr] || 0) + 1
+
+      if (position === 'captain') {
+        captainCountByDate[dateStr] = (captainCountByDate[dateStr] || 0) + 1
+      } else if (position === 'first_officer') {
+        firstOfficerCountByDate[dateStr] = (firstOfficerCountByDate[dateStr] || 0) + 1
+      }
+
       current.setDate(current.getDate() + 1)
     }
   }
 
-  // Check each day in the requested range - max 5 total employees per day
+  // Check each day in the requested range - max 5 per position type
   const reqStart = new Date(startDate)
   const reqEnd = new Date(endDate)
   const current = new Date(reqStart)
 
   while (current <= reqEnd) {
     const dateStr = current.toISOString().split('T')[0]
-    const count = countByDate[dateStr] || 0
 
-    if (count >= 5) {
-      return {
-        allowed: false,
-        error: `Maximum of 5 employees already on leave on ${dateStr}. Please select different dates.`
+    if (userPosition === 'captain') {
+      const captainCount = captainCountByDate[dateStr] || 0
+      if (captainCount >= 5) {
+        return {
+          allowed: false,
+          error: `Maximum of 5 captains already on leave on ${dateStr}. Please select different dates.`
+        }
+      }
+    } else if (userPosition === 'first_officer') {
+      const firstOfficerCount = firstOfficerCountByDate[dateStr] || 0
+      if (firstOfficerCount >= 5) {
+        return {
+          allowed: false,
+          error: `Maximum of 5 first officers already on leave on ${dateStr}. Please select different dates.`
+        }
       }
     }
 

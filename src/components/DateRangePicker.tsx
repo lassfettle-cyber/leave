@@ -81,13 +81,7 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
     // ensure no disabled day in range
     if (rangeHasDisabled(start, d)) return
 
-    // Enforce minimum 14 consecutive days
-    const daysDiff = Math.ceil((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    if (daysDiff < 14) {
-      alert('Minimum booking is 14 consecutive days')
-      return
-    }
-
+    // Server will validate 14-day minimum for first application
     onChange(fmt(start), fmt(d))
   }
 
