@@ -414,12 +414,12 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
 
             // Calculate minimum height based on number of leave blocks
             const maxLeaveBlocks = segmentsForWeek.length
-            const minHeight = Math.max(120, 40 + (maxLeaveBlocks * 28)) // 40px for day number + 28px per leave block
+            const minHeight = Math.max(100, 40 + (maxLeaveBlocks * 28)) // 40px for day number + 28px per leave block
 
             return (
               <div key={wIdx} className="relative" style={{ minHeight: `${minHeight}px` }}>
                 {/* Day cells */}
-                <div className="grid grid-cols-7 gap-0 h-full">
+                <div className="grid grid-cols-7 gap-0" style={{ minHeight: `${minHeight}px` }}>
                   {week.map((date, index) => {
                     const isCurrentMonthDay = isCurrentMonth(date)
                     const isTodayDate = isToday(date)
@@ -431,7 +431,8 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                     return (
                       <div
                         key={index}
-                        className={`relative h-full border-2 border-gray-400 p-1 ${bgClass}`}
+                        className={`relative border border-gray-300 p-1 ${bgClass}`}
+                        style={{ minHeight: `${minHeight}px` }}
 
                       >
                         <div className="relative z-20 text-right">
