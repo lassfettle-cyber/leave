@@ -430,13 +430,13 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                         className={`relative min-h-[120px] border-2 border-gray-400 p-1 ${bgClass}`}
 
                       >
-                        <div className="relative z-20 text-sm font-medium bg-white/90 backdrop-blur-sm inline-block px-2 py-1 rounded shadow-sm">
+                        <div className="relative z-20 text-right">
                           {isTodayDate ? (
                             <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">
                               {date.getDate()}
                             </span>
                           ) : (
-                            <span className={`font-semibold ${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-500' : 'text-gray-900'}`}>
+                            <span className={`text-lg font-bold ${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-400' : 'text-gray-700'}`}>
                               {date.getDate()}
                             </span>
                           )}
