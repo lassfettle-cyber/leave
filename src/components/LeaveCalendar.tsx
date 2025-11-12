@@ -427,25 +427,25 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[120px] border border-gray-200 p-1 ${bgClass}`}
+                        className={`relative min-h-[120px] border-2 border-gray-400 p-1 ${bgClass}`}
 
                       >
-                        <div className="text-sm font-medium">
+                        <div className="relative z-20 text-sm font-medium bg-white/90 backdrop-blur-sm inline-block px-2 py-1 rounded shadow-sm">
                           {isTodayDate ? (
-                            <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs">
+                            <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">
                               {date.getDate()}
                             </span>
                           ) : (
-                            <span className={`${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-400' : 'text-gray-900'}`}>
+                            <span className={`font-semibold ${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-500' : 'text-gray-900'}`}>
                               {date.getDate()}
                             </span>
                           )}
                         </div>
 
 	                        {holidaysByDate[dateStr] && (
-	                          <div className="mt-1">
+	                          <div className="mt-1 relative z-20">
 	                            <span
-	                              className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] border border-amber-200"
+	                              className="inline-block px-2 py-1 rounded bg-amber-100 text-amber-900 text-[10px] font-semibold border border-amber-300 shadow-sm"
 	                              title={holidaysByDate[dateStr]}
 	                            >
 	                              {holidaysByDate[dateStr]}
@@ -473,11 +473,11 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                         title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}\nClick to view all leave`}
                         onClick={() => handleUserClick(seg.user.id)}
                       >
-                        <div className={`w-full ${userColor.bg} text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-90 transition-opacity`}>
-                          <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold`}>
+                        <div className={`w-full ${userColor.bg} opacity-65 text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-80 transition-opacity shadow-sm`}>
+                          <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold shadow-sm`}>
                             {seg.user.initials}
                           </div>
-                          <span className="truncate pr-1">{seg.user.firstName}</span>
+                          <span className="truncate pr-1 font-semibold">{seg.user.firstName}</span>
                           <span className="text-[10px] mr-1">{positionIcon}</span>
                         </div>
                       </div>
