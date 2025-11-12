@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Get all users
     const result = await db.query(`
-      SELECT 
+      SELECT
         id,
         email,
         first_name,
@@ -52,10 +52,11 @@ export async function GET(request: NextRequest) {
         other_names,
         phone,
         role,
+        position,
         leave_cycle_start,
         created_at,
         updated_at
-      FROM profiles 
+      FROM profiles
       ORDER BY created_at DESC
     `)
 
