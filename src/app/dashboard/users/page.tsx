@@ -35,6 +35,8 @@ export default function UserManagementPage() {
   const [showAllocationForm, setShowAllocationForm] = useState(false)
   const [allocationUser, setAllocationUser] = useState<Profile | null>(null)
   const [allocationDays, setAllocationDays] = useState<number>(25)
+  const [showUserInfo, setShowUserInfo] = useState(false)
+  const [infoUser, setInfoUser] = useState<Profile | null>(null)
 
 
 
@@ -322,6 +324,11 @@ export default function UserManagementPage() {
     }
   }
 
+  const openUserInfo = (u: Profile) => {
+    setInfoUser(u)
+    setShowUserInfo(true)
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setInviteData(prev => ({
@@ -427,6 +434,9 @@ export default function UserManagementPage() {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Position
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -451,11 +461,49 @@ export default function UserManagementPage() {
                         {user.role}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.position ? (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.position === 'captain'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {user.position === 'captain' ? '✈️ Captain' : '👨‍✈️ First Officer'}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Not set</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex space-x-3">
-                        <button onClick={() => openEdit(user)} className="text-blue-600 hover:text-blue-900">Edit</button>
-                        <button onClick={() => openAllocation(user)} className="text-indigo-600 hover:text-indigo-900">Add Allocation</button>
-                        <button onClick={() => handleDeleteUser(user)} className="text-red-600 hover:text-red-900 font-medium">Delete</button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openUserInfo(user)}
+                          className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
+                          title="View Info"
+                        >
+                          ℹ️
+                        </button>
+                        <button
+                          onClick={() => openEdit(user)}
+                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded"
+                          title="Edit User"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => openAllocation(user)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded"
+                          title="Add Allocation"
+                        >
+                          📅
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
+                          title="Delete User"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -534,6 +582,75 @@ export default function UserManagementPage() {
           </div>
         </div>
       </div>
+
+      {/* User Info Modal */}
+      {showUserInfo && infoUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">User Information</h3>
+                <button
+                  onClick={() => setShowUserInfo(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Name</label>
+                  <p className="text-gray-900">{infoUser.first_name} {infoUser.other_names || ''} {infoUser.last_name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Email</label>
+                  <p className="text-gray-900">{infoUser.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Phone</label>
+                  <p className="text-gray-900">{infoUser.phone}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Role</label>
+                  <p className="text-gray-900 capitalize">{infoUser.role}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Position</label>
+                  <p className="text-gray-900">
+                    {infoUser.position ? (
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        infoUser.position === 'captain'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {infoUser.position === 'captain' ? '✈️ Captain' : '👨‍✈️ First Officer'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">Not set</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Leave Cycle Start</label>
+                  <p className="text-gray-900">{new Date(infoUser.leave_cycle_start).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Created At</label>
+                  <p className="text-gray-900">{new Date(infoUser.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowUserInfo(false)}
+                  className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invite Form Modal */}
       {/* Edit User Modal */}
