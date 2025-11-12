@@ -427,25 +427,25 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[120px] border border-gray-200 p-1 ${bgClass}`}
+                        className={`relative min-h-[120px] border-2 border-gray-300 p-1 ${bgClass}`}
 
                       >
-                        <div className="text-sm font-medium">
+                        <div className="relative z-20 text-sm font-medium bg-white/90 backdrop-blur-sm inline-block px-1.5 py-0.5 rounded shadow-sm border border-gray-300">
                           {isTodayDate ? (
-                            <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs">
+                            <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">
                               {date.getDate()}
                             </span>
                           ) : (
-                            <span className={`${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-400' : 'text-gray-900'}`}>
+                            <span className={`font-semibold ${!isCurrentMonthDay && viewType === 'monthly' ? 'text-gray-500' : 'text-gray-900'}`}>
                               {date.getDate()}
                             </span>
                           )}
                         </div>
 
 	                        {holidaysByDate[dateStr] && (
-	                          <div className="mt-1">
+	                          <div className="mt-1 relative z-20">
 	                            <span
-	                              className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] border border-amber-200"
+	                              className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] border border-amber-200 shadow-sm"
 	                              title={holidaysByDate[dateStr]}
 	                            >
 	                              {holidaysByDate[dateStr]}
