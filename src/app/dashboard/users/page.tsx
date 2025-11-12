@@ -30,6 +30,7 @@ export default function UserManagementPage() {
     last_name: '',
     phone: '',
     role: 'employee' as 'admin' | 'employee',
+    position: 'captain' as 'captain' | 'first_officer',
     leave_cycle_start: ''
   })
   const [showAllocationForm, setShowAllocationForm] = useState(false)
@@ -206,6 +207,7 @@ export default function UserManagementPage() {
       last_name: u.last_name,
       phone: u.phone,
       role: u.role,
+      position: u.position || 'captain',
       leave_cycle_start: u.leave_cycle_start
     })
     setShowEditForm(true)
@@ -719,16 +721,29 @@ export default function UserManagementPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Leave Cycle Start *</label>
-                    <input
-                      type="date"
-                      name="leave_cycle_start"
-                      value={editData.leave_cycle_start}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                    <select
+                      name="position"
+                      value={editData.position}
                       onChange={handleEditChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                    />
+                    >
+                      <option value="captain">Captain</option>
+                      <option value="first_officer">First Officer</option>
+                    </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Leave Cycle Start *</label>
+                  <input
+                    type="date"
+                    name="leave_cycle_start"
+                    value={editData.leave_cycle_start}
+                    onChange={handleEditChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <button

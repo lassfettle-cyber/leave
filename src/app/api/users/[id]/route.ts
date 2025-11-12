@@ -27,7 +27,7 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const { first_name, other_names, last_name, phone, role, leave_cycle_start } = body
+    const { first_name, other_names, last_name, phone, role, position, leave_cycle_start } = body
 
     // Build dynamic update
     const fields: string[] = []
@@ -44,6 +44,7 @@ export async function PUT(
     if (last_name !== undefined) push('last_name', last_name)
     if (phone !== undefined) push('phone', phone)
     if (role !== undefined) push('role', role)
+    if (position !== undefined) push('position', position)
     if (leave_cycle_start !== undefined) push('leave_cycle_start', leave_cycle_start)
 
     if (fields.length === 0) {
@@ -52,7 +53,7 @@ export async function PUT(
 
     values.push(id)
 
-    const sql = `UPDATE profiles SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING id, email, first_name, last_name, other_names, phone, role, leave_cycle_start, created_at, updated_at`
+    const sql = `UPDATE profiles SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING id, email, first_name, last_name, other_names, phone, role, position, leave_cycle_start, created_at, updated_at`
 
     const result = await db.query(sql, values)
 
