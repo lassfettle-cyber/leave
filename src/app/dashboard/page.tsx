@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import LeaveRequestForm from '@/components/LeaveRequestForm'
 import type { PendingRequest, UpcomingLeave } from '@/types/database'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
   const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeave[]>([])
@@ -202,6 +204,8 @@ function AdminDashboard({
   onApprove: (id: string) => void
   onDeny: (id: string) => void
 }) {
+  const router = useRouter()
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -330,7 +334,10 @@ function AdminDashboard({
               ))}
               {upcomingLeave.length > 5 && (
                 <div className="text-center">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
+                  <button
+                    onClick={() => router.push('/dashboard/upcoming-leave')}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
                     View all upcoming leave →
                   </button>
                 </div>
@@ -421,6 +428,7 @@ function AdminDashboard({
 
 // Employee Dashboard Component
 function EmployeeDashboard() {
+  const router = useRouter()
   const [balance, setBalance] = useState({
     daysAllocated: 0,
     daysUsed: 0,
@@ -640,7 +648,10 @@ function EmployeeDashboard() {
               ))}
               {upcomingLeave.length > 5 && (
                 <div className="text-center">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
+                  <button
+                    onClick={() => router.push('/dashboard/upcoming-leave')}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
                     View all upcoming leave →
                   </button>
                 </div>

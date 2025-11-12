@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface LeaveBlock {
   id: string
@@ -70,6 +71,7 @@ function getUserColor(userId: string): typeof USER_COLORS[0] {
 }
 
 export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
+  const router = useRouter()
   const [leaveBlocks, setLeaveBlocks] = useState<LeaveBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -78,6 +80,10 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   const [holidaysByDate, setHolidaysByDate] = useState<Record<string, string>>({})
   const holidaySet = useMemo(() => new Set(Object.keys(holidaysByDate)), [holidaysByDate])
+
+  const handleUserClick = (userId: string) => {
+    router.push(`/dashboard/users/${userId}/leave`)
+  }
 
   // Load settings once (excluded weekdays and holidays)
   useEffect(() => {
@@ -250,16 +256,17 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
   const weekKeyOf = (d: Date): WeekKey => startOfWeek(d).toISOString().split('T')[0]
 
   const weekSegments = useMemo<WeekSegment[]>(() => {
-    // Group blocks by leave id
-    const byId = new Map<string, LeaveBlock[]>()
+    // Group blocks by leave id AND user id to avoid conflicts
+    const byKey = new Map<string, LeaveBlock[]>()
     for (const b of leaveBlocks) {
-      const arr = byId.get(b.id) || []
+      const key = `${b.id}-${b.user.id}`
+      const arr = byKey.get(key) || []
       arr.push(b)
-      byId.set(b.id, arr)
+      byKey.set(key, arr)
     }
     const segments: WeekSegment[] = []
 
-    for (const [id, items] of Array.from(byId.entries())) {
+    for (const [key, items] of Array.from(byKey.entries())) {
       // sort by date
       items.sort((a: LeaveBlock, b: LeaveBlock) => a.date.localeCompare(b.date))
       const firstStrAll = items[0]?.date
@@ -289,7 +296,7 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
         const roundedRight = endStr === lastStrAll
 
         segments.push({
-          id,
+          id: first.id,
           user: first.user,
           reason: first.reason,
           startDate: new Date(first.date),
@@ -454,18 +461,19 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                 </div>
 
                 {/* Overlay: continuous leave bars for this week */}
-                <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-7 auto-rows-[24px]">
+                <div className="absolute inset-0 z-10 grid grid-cols-7 auto-rows-[24px]">
                   {segmentsForWeek.map((seg, i) => {
                     const userColor = getUserColor(seg.user.id)
                     const positionIcon = seg.user.position === 'captain' ? '✈️' : seg.user.position === 'first_officer' ? '👨‍✈️' : ''
                     return (
                       <div
                         key={`${seg.id}-${i}`}
-                        className="relative flex items-center h-6 mt-6"
+                        className="relative flex items-center h-6 mt-6 cursor-pointer"
                         style={{ gridColumn: `${seg.colStart} / span ${seg.colSpan}` }}
-                        title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}`}
+                        title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}\nClick to view all leave`}
+                        onClick={() => handleUserClick(seg.user.id)}
                       >
-                        <div className={`w-full ${userColor.bg} text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'}`}>
+                        <div className={`w-full ${userColor.bg} text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-90 transition-opacity`}>
                           <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold`}>
                             {seg.user.initials}
                           </div>
