@@ -473,7 +473,7 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                         title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}\nClick to view all leave`}
                         onClick={() => handleUserClick(seg.user.id)}
                       >
-                        <div className={`w-full ${userColor.bg} opacity-75 text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-85 transition-opacity shadow-sm`}>
+                        <div className={`w-full ${userColor.bg} opacity-60 text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-70 transition-opacity shadow-sm`}>
                           <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold shadow-sm`}>
                             {seg.user.initials}
                           </div>
