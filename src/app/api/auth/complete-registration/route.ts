@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     // Generate user ID
     const userId = uuidv4()
 
-    // Set leave cycle start date (current date)
-    const leaveCycleStart = new Date().toISOString().split('T')[0]
+    // Set leave cycle start date (Jan 1, 2026 - all employees have same cycle)
+    const leaveCycleStart = '2026-01-01'
 
     // Begin transaction
     await db.query('BEGIN')

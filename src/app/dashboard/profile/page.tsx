@@ -326,18 +326,18 @@ export default function ProfilePage() {
 
             <div>
               <label htmlFor="leave_cycle_start" className="block text-sm font-medium text-gray-700 mb-1">
-                Leave Cycle Start Date *
+                Leave Cycle Start Date
               </label>
               <input
                 type="date"
                 id="leave_cycle_start"
                 name="leave_cycle_start"
-                value={formData.leave_cycle_start}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                required
+                value="2026-01-01"
+                disabled
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
               />
+              <p className="text-xs text-gray-500 mt-1">All employees: Jan 1, 2026 - Dec 31, 2026</p>
             </div>
           </div>
 

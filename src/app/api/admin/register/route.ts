@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         'admin',
-        new Date().toISOString().split('T')[0]
+        '2026-01-01' // All employees have same leave cycle: Jan 1 - Dec 31, 2026
       ]
     )
 

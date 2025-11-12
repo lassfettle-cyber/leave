@@ -735,15 +735,16 @@ export default function UserManagementPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Leave Cycle Start *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Leave Cycle Start</label>
                   <input
                     type="date"
                     name="leave_cycle_start"
-                    value={editData.leave_cycle_start}
-                    onChange={handleEditChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                    value="2026-01-01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                    disabled
+                    readOnly
                   />
+                  <p className="text-xs text-gray-500 mt-1">All employees: Jan 1, 2026 - Dec 31, 2026</p>
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
