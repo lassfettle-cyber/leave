@@ -11,6 +11,7 @@ interface LeaveBlock {
     lastName: string
     fullName: string
     email: string
+    position?: 'captain' | 'first_officer'
     initials: string
   }
   reason: string
@@ -36,6 +37,36 @@ interface WeekSegment {
 
 interface LeaveCalendarProps {
   viewType: 'monthly' | 'weekly'
+}
+
+// Color palette for user leave blocks
+const USER_COLORS = [
+  { bg: 'bg-blue-500', text: 'text-blue-600', ring: 'ring-blue-600' },
+  { bg: 'bg-green-500', text: 'text-green-600', ring: 'ring-green-600' },
+  { bg: 'bg-purple-500', text: 'text-purple-600', ring: 'ring-purple-600' },
+  { bg: 'bg-pink-500', text: 'text-pink-600', ring: 'ring-pink-600' },
+  { bg: 'bg-indigo-500', text: 'text-indigo-600', ring: 'ring-indigo-600' },
+  { bg: 'bg-red-500', text: 'text-red-600', ring: 'ring-red-600' },
+  { bg: 'bg-orange-500', text: 'text-orange-600', ring: 'ring-orange-600' },
+  { bg: 'bg-teal-500', text: 'text-teal-600', ring: 'ring-teal-600' },
+  { bg: 'bg-cyan-500', text: 'text-cyan-600', ring: 'ring-cyan-600' },
+  { bg: 'bg-amber-500', text: 'text-amber-600', ring: 'ring-amber-600' },
+  { bg: 'bg-lime-500', text: 'text-lime-600', ring: 'ring-lime-600' },
+  { bg: 'bg-emerald-500', text: 'text-emerald-600', ring: 'ring-emerald-600' },
+  { bg: 'bg-sky-500', text: 'text-sky-600', ring: 'ring-sky-600' },
+  { bg: 'bg-violet-500', text: 'text-violet-600', ring: 'ring-violet-600' },
+  { bg: 'bg-fuchsia-500', text: 'text-fuchsia-600', ring: 'ring-fuchsia-600' },
+  { bg: 'bg-rose-500', text: 'text-rose-600', ring: 'ring-rose-600' },
+]
+
+// Generate consistent color for a user based on their ID
+function getUserColor(userId: string): typeof USER_COLORS[0] {
+  let hash = 0
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % USER_COLORS.length
+  return USER_COLORS[index]
 }
 
 export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
@@ -424,23 +455,26 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
 
                 {/* Overlay: continuous leave bars for this week */}
                 <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-7 auto-rows-[24px]">
-                  {segmentsForWeek.map((seg, i) => (
-                    <div
-                      key={`${seg.id}-${i}`}
-                      className="relative flex items-center h-6 mt-6"
-
-
-                      style={{ gridColumn: `${seg.colStart} / span ${seg.colSpan}` }}
-                      title={`${seg.user.fullName} - ${seg.reason}`}
-                    >
-                      <div className={`w-full bg-teal-500 text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'}`}>
-                        <div className="ml-2 mr-2 w-5 h-5 bg-white rounded-full flex items-center justify-center text-teal-600 text-[10px] font-bold">
-                          {seg.user.initials}
+                  {segmentsForWeek.map((seg, i) => {
+                    const userColor = getUserColor(seg.user.id)
+                    const positionIcon = seg.user.position === 'captain' ? '✈️' : seg.user.position === 'first_officer' ? '👨‍✈️' : ''
+                    return (
+                      <div
+                        key={`${seg.id}-${i}`}
+                        className="relative flex items-center h-6 mt-6"
+                        style={{ gridColumn: `${seg.colStart} / span ${seg.colSpan}` }}
+                        title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}`}
+                      >
+                        <div className={`w-full ${userColor.bg} text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'}`}>
+                          <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold`}>
+                            {seg.user.initials}
+                          </div>
+                          <span className="truncate pr-1">{seg.user.firstName}</span>
+                          <span className="text-[10px] mr-1">{positionIcon}</span>
                         </div>
-                        <span className="truncate pr-2">{seg.user.firstName}</span>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )

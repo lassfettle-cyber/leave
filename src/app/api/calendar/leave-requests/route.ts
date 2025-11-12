@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         p.first_name,
         p.last_name,
         p.email,
+        p.position,
         (p.first_name || ' ' || p.last_name) as full_name
       FROM leave_requests lr
       JOIN profiles p ON lr.user_id = p.id
@@ -86,6 +87,7 @@ export async function GET(request: NextRequest) {
               lastName: request.last_name,
               fullName: request.full_name,
               email: request.email,
+              position: request.position,
               initials: (request.first_name?.[0] || '') + (request.last_name?.[0] || '')
             },
             reason: request.reason,

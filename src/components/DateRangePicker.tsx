@@ -40,10 +40,11 @@ export default function DateRangePicker({ startDate, endDate, onChange, disabled
   const min = useMemo(() => minDate || todayStr, [minDate, todayStr])
 
   const [cursor, setCursor] = useState(() => {
-    const base = startDate ? new Date(startDate) : new Date()
+    const base = startDate ? new Date(startDate) : new Date(2026, 0, 1) // Default to Jan 1, 2026
     // Limit to 2026
     const year = base.getUTCFullYear() === 2026 ? 2026 : 2026
-    return { year, month: base.getUTCMonth() }
+    const month = base.getUTCFullYear() === 2026 ? base.getUTCMonth() : 0 // Default to January if not 2026
+    return { year, month }
   })
 
   const start = startDate ? toDateOnly(new Date(startDate)) : undefined
