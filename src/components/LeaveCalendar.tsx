@@ -412,10 +412,14 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
             const wkKey: WeekKey = weekKeyOf(week[0])
             const segmentsForWeek = weekSegments.filter(s => s.weekKey === wkKey)
 
+            // Calculate minimum height based on number of leave blocks
+            const maxLeaveBlocks = segmentsForWeek.length
+            const minHeight = Math.max(120, 40 + (maxLeaveBlocks * 28)) // 40px for day number + 28px per leave block
+
             return (
-              <div key={wIdx} className="relative">
+              <div key={wIdx} className="relative" style={{ minHeight: `${minHeight}px` }}>
                 {/* Day cells */}
-                <div className="grid grid-cols-7 gap-0">
+                <div className="grid grid-cols-7 gap-0 h-full">
                   {week.map((date, index) => {
                     const isCurrentMonthDay = isCurrentMonth(date)
                     const isTodayDate = isToday(date)
@@ -427,7 +431,7 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                     return (
                       <div
                         key={index}
-                        className={`relative min-h-[120px] border-2 border-gray-400 p-1 ${bgClass}`}
+                        className={`relative h-full border-2 border-gray-400 p-1 ${bgClass}`}
 
                       >
                         <div className="relative z-20 text-right">
@@ -461,14 +465,14 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                 </div>
 
                 {/* Overlay: continuous leave bars for this week */}
-                <div className="absolute inset-0 z-10 grid grid-cols-7 auto-rows-[24px]">
+                <div className="absolute inset-0 z-10 grid grid-cols-7 auto-rows-[28px] pt-8">
                   {segmentsForWeek.map((seg, i) => {
                     const userColor = getUserColor(seg.user.id)
                     const positionIcon = seg.user.position === 'captain' ? '✈️' : seg.user.position === 'first_officer' ? '👨‍✈️' : ''
                     return (
                       <div
                         key={`${seg.id}-${i}`}
-                        className="relative flex items-center h-6 mt-6 cursor-pointer"
+                        className="relative flex items-center h-6 mt-1 cursor-pointer"
                         style={{ gridColumn: `${seg.colStart} / span ${seg.colSpan}` }}
                         title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}\nClick to view all leave`}
                         onClick={() => handleUserClick(seg.user.id)}
