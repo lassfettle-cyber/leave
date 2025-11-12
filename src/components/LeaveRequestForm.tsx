@@ -26,19 +26,22 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
       try {
         const token = localStorage.getItem('auth_token')
         if (!token) return
-        // Fetch settings
-        const [resSettings, resMyLeave] = await Promise.all([
+        // Fetch settings, user's leave, and position capacity
+        const [resSettings, resMyLeave, resCapacity] = await Promise.all([
           fetch('/api/settings/leave', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/employee/my-leave', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/leave-requests/position-capacity', { headers: { Authorization: `Bearer ${token}` } }),
         ])
         const dataSettings = await resSettings.json()
         if (resSettings.ok && dataSettings.success) {
           setExcludedWeekdays(dataSettings.settings?.excluded_weekdays || [])
           setHolidays(dataSettings.holidays || [])
         }
+        const disabled = new Set<string>()
+
+        // Add user's existing leave dates
         const dataMyLeave = await resMyLeave.json()
         if (resMyLeave.ok && dataMyLeave.success) {
-          const disabled = new Set<string>()
           const requests = (dataMyLeave.leaveRequests || []) as Array<{ start_date: string; end_date: string; status: string }>
           const active = requests.filter(r => r.status === 'pending' || r.status === 'approved')
           for (const r of active) {
@@ -52,8 +55,17 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
               cur.setUTCDate(cur.getUTCDate() + 1)
             }
           }
-          setDisabledDates(disabled)
         }
+
+        // Add dates at capacity for user's position
+        const dataCapacity = await resCapacity.json()
+        if (resCapacity.ok && dataCapacity.success) {
+          for (const date of dataCapacity.disabledDates || []) {
+            disabled.add(date)
+          }
+        }
+
+        setDisabledDates(disabled)
       } catch {
         // ignore
       }
