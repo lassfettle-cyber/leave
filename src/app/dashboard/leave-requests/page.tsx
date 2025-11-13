@@ -207,9 +207,11 @@ export default function LeaveRequestsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-600">{request.reason}</p>
-                    </div>
+                    {request.reason && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">{request.reason}</p>
+                      </div>
+                    )}
                     {request.admin_notes && (
                       <div className="mt-2 bg-gray-50 rounded-md p-2">
                         <p className="text-xs text-gray-500 font-medium">Admin Notes:</p>

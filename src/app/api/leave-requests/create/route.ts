@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
     const { startDate, endDate, reason } = body
 
     // Validate required fields
-    if (!startDate || !endDate || !reason) {
+    if (!startDate || !endDate) {
       return NextResponse.json(
-        { error: 'Start date, end date, and reason are required' },
+        { error: 'Start date and end date are required' },
         { status: 400 }
       )
     }
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         user_id, start_date, end_date, days, reason, status
       ) VALUES ($1, $2, $3, $4, $5, 'pending')
       RETURNING *
-    `, [decoded.userId, startDate, endDate, days, reason])
+    `, [decoded.userId, startDate, endDate, days, reason || null])
 
     const leaveRequest = result.rows[0]
 

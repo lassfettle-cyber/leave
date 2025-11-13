@@ -174,7 +174,7 @@ export default function UserLeavePage() {
                           <span className="text-sm text-gray-500">({request.days} days)</span>
                           {getStatusBadge(request.status)}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+                        {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
                     </div>
                   </div>
@@ -199,7 +199,7 @@ export default function UserLeavePage() {
                           <span className="text-sm text-gray-500">({request.days} days)</span>
                           {getStatusBadge(request.status)}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+                        {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function UserLeavePage() {
                           <span className="text-sm text-gray-500">({request.days} days)</span>
                           {getStatusBadge(request.status)}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+                        {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
                     </div>
                   </div>

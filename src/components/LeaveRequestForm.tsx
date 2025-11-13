@@ -11,6 +11,7 @@ interface LeaveRequestFormProps {
 export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showReason, setShowReason] = useState(false)
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
@@ -206,21 +207,44 @@ export default function LeaveRequestForm({ onSuccess, onCancel }: LeaveRequestFo
               </div>
             )}
 
-            <div>
-              <label htmlFor="reason" className="block text-sm font-medium text-gray-700">
-                Reason
-              </label>
-              <textarea
-                id="reason"
-                name="reason"
-                value={formData.reason}
-                onChange={handleInputChange}
-                rows={3}
-                placeholder="Please provide a reason for your leave request..."
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
+            {!showReason ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowReason(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  + Add reason (optional)
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="reason" className="block text-sm font-medium text-gray-700">
+                    Reason (optional)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReason(false)
+                      setFormData(prev => ({ ...prev, reason: '' }))
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <textarea
+                  id="reason"
+                  name="reason"
+                  value={formData.reason}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder="Please provide a reason for your leave request..."
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <button

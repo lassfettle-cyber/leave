@@ -587,7 +587,7 @@ function EmployeeDashboard() {
                       {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {leave.days} day{leave.days !== 1 ? 's' : ''} • {leave.reason}
+                      {leave.days} day{leave.days !== 1 ? 's' : ''}{leave.reason ? ` • ${leave.reason}` : ''}
                     </p>
                   </div>
                   <div>
