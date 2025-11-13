@@ -20,7 +20,7 @@ export interface LeaveRequest {
   end_date: string
   days: number
   status: 'pending' | 'approved' | 'denied' | 'cancelled'
-  reason: string
+  reason: string | null
   admin_notes?: string
   created_at: string
   approved_by?: string
