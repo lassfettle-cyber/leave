@@ -204,8 +204,35 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating leave request:', error)
+
+    // Provide more specific error messages based on the error type
+    let errorMessage = 'Failed to create leave request. Please try again.'
+
+    if (error instanceof Error) {
+      // JWT verification errors
+      if (error.name === 'JsonWebTokenError') {
+        errorMessage = 'Invalid authentication token. Please log in again.'
+      } else if (error.name === 'TokenExpiredError') {
+        errorMessage = 'Your session has expired. Please log in again.'
+      }
+      // Database errors
+      else if (error.message.includes('violates foreign key constraint')) {
+        errorMessage = 'Invalid user or data reference. Please contact support.'
+      } else if (error.message.includes('violates check constraint')) {
+        errorMessage = 'Invalid data provided. Please check your input and try again.'
+      } else if (error.message.includes('duplicate key')) {
+        errorMessage = 'A leave request with these details already exists.'
+      } else if (error.message.includes('connection')) {
+        errorMessage = 'Database connection error. Please try again in a moment.'
+      }
+      // Include the actual error message in development for debugging
+      else if (process.env.NODE_ENV === 'development') {
+        errorMessage = `Error: ${error.message}`
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Failed to create leave request' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
