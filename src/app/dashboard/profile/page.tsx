@@ -310,7 +310,7 @@ export default function ProfilePage() {
 
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
+                Phone Number
               </label>
               <input
                 type="tel"
@@ -320,7 +320,6 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                required
               />
             </div>
 

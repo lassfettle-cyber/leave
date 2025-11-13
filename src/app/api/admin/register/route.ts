@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { email, password, firstName, otherNames, lastName, phone } = body
 
     // Validate required fields
-    if (!email || !password || !firstName || !lastName || !phone) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

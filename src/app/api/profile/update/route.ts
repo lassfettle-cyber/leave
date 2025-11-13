@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
     const { first_name, other_names, last_name, phone, leave_cycle_start } = body
 
     // Validate required fields
-    if (!first_name || !last_name || !phone || !leave_cycle_start) {
+    if (!first_name || !last_name || !leave_cycle_start) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

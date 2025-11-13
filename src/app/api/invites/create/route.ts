@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
     const { email, firstName, lastName, phone, role, position, daysAllocated } = body
 
     // Validate required fields
-    if (!email || !firstName || !lastName || !phone || !role || !position || daysAllocated === undefined) {
+    if (!email || !firstName || !lastName || !role || !position || daysAllocated === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields (email, firstName, lastName, phone, role, position, daysAllocated)' },
+        { error: 'Missing required fields (email, firstName, lastName, role, position, daysAllocated)' },
         { status: 400 }
       )
     }
