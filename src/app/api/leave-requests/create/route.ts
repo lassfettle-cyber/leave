@@ -69,7 +69,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user has enough leave balance first (needed for minimum days validation)
+    const currentYear = new Date().getFullYear()
+    const balanceResult = await db.query(`
+      SELECT days_allocated, days_used
+      FROM leave_balances
+      WHERE user_id = $1 AND year = $2
+    `, [decoded.userId, currentYear])
+
+    if (balanceResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Leave balance not found' },
+        { status: 404 }
+      )
+    }
+
+    const balance = balanceResult.rows[0]
+    const remainingDays = balance.days_allocated - balance.days_used
+
     // Enforce minimum 14 consecutive days for first application only
+    // BUT only if the user has 14 or more days remaining
     // Check if user has any approved leave requests with 14+ days
     const approvedLeaveCheck = await db.query(`
       SELECT id, days
@@ -82,8 +101,8 @@ export async function POST(request: NextRequest) {
 
     const hasApproved14DayLeave = approvedLeaveCheck.rows.length > 0
 
-    if (!hasApproved14DayLeave) {
-      // This is the first application (or previous 14+ day leave was deleted/denied)
+    if (!hasApproved14DayLeave && remainingDays >= 14) {
+      // This is the first application and user has 14+ days available
       const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
       if (daysDiff < 14) {
         return NextResponse.json(
@@ -116,23 +135,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has enough leave balance
-    const currentYear = new Date().getFullYear()
-    const balanceResult = await db.query(`
-      SELECT days_allocated, days_used
-      FROM leave_balances
-      WHERE user_id = $1 AND year = $2
-    `, [decoded.userId, currentYear])
-
-    if (balanceResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Leave balance not found' },
-        { status: 404 }
-      )
-    }
-
-    const balance = balanceResult.rows[0]
-    const remainingDays = balance.days_allocated - balance.days_used
-
     if (days > remainingDays) {
       return NextResponse.json(
         { error: `Insufficient leave balance. You have ${remainingDays} days remaining, but requested ${days} days.` },
