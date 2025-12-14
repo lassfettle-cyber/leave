@@ -58,27 +58,32 @@ export default function DashboardPage() {
 
         if (pendingRes.ok) {
           const result = await pendingRes.json()
-          if (result.success) setPendingRequests(result.data)
+          if (result.success) setPendingRequests(result.data || [])
         }
 
         if (upcomingRes.ok) {
           const result = await upcomingRes.json()
-          if (result.success) setUpcomingLeave(result.data)
+          if (result.success) setUpcomingLeave(result.upcomingLeave || [])
         }
 
         if (approvedRes.ok) {
           const result = await approvedRes.json()
-          if (result.success) setApprovedLeaves(result.data)
+          if (result.success) setApprovedLeaves(result.data || [])
         }
 
         if (remindersRes.ok) {
           const result = await remindersRes.json()
-          if (result.success) setReminders(result.data)
+          if (result.success) setReminders(result.data || [])
         }
 
         if (statsRes.ok) {
           const result = await statsRes.json()
-          if (result.success) setStats(result.data)
+          if (result.success) setStats(result.data || {
+            pendingRequests: 0,
+            approvedThisMonth: 0,
+            totalEmployees: 0,
+            availableDays: 0
+          })
         }
       } else {
         // Employee dashboard data - will implement later
@@ -463,12 +468,18 @@ function EmployeeDashboard() {
 
       if (balanceRes.ok) {
         const result = await balanceRes.json()
-        if (result.success) setBalance(result.data)
+        if (result.success) setBalance(result.data || {
+          daysAllocated: 0,
+          daysUsed: 0,
+          daysRemaining: 0,
+          pendingRequests: 0,
+          upcomingLeave: 0
+        })
       }
 
       if (upcomingRes.ok) {
         const result = await upcomingRes.json()
-        if (result.success) setUpcomingLeave(result.data)
+        if (result.success) setUpcomingLeave(result.upcomingLeave || [])
       }
 
       if (myLeaveRes.ok) {
