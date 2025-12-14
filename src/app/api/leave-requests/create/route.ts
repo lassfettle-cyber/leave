@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Enforce minimum 14 consecutive days for first application only
     // BUT only if the user has 14 or more days remaining
+    // If user has less than 14 days, they must book all remaining days in one block
     // Check if user has any approved leave requests with 14+ days
     const approvedLeaveCheck = await db.query(`
       SELECT id, days
@@ -101,14 +102,22 @@ export async function POST(request: NextRequest) {
 
     const hasApproved14DayLeave = approvedLeaveCheck.rows.length > 0
 
-    if (!hasApproved14DayLeave && remainingDays >= 14) {
-      // This is the first application and user has 14+ days available
+    if (!hasApproved14DayLeave) {
+      // This is the first application
       const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      if (daysDiff < 14) {
-        return NextResponse.json(
-          { error: 'First leave application must be a minimum of 14 consecutive days' },
-          { status: 400 }
-        )
+
+      if (remainingDays >= 14) {
+        // User has 14+ days available, must book at least 14 days
+        if (daysDiff < 14) {
+          return NextResponse.json(
+            { error: 'First leave application must be a minimum of 14 consecutive days' },
+            { status: 400 }
+          )
+        }
+      } else {
+        // User has less than 14 days, must book all remaining days in one block
+        // We need to calculate working days first to check this properly
+        // This will be validated after calculating working days below
       }
     }
 
@@ -140,6 +149,18 @@ export async function POST(request: NextRequest) {
         { error: `Insufficient leave balance. You have ${remainingDays} days remaining, but requested ${days} days.` },
         { status: 400 }
       )
+    }
+
+    // Additional validation for users with less than 14 days on their first application
+    if (!hasApproved14DayLeave && remainingDays < 14) {
+      // User has less than 14 days and this is their first application
+      // They must book all remaining days in one block
+      if (days !== remainingDays) {
+        return NextResponse.json(
+          { error: `You have ${remainingDays} days remaining. Since this is less than 14 days, you must book all ${remainingDays} days in one block for your first leave application.` },
+          { status: 400 }
+        )
+      }
     }
 
     // Check for overlapping leave requests

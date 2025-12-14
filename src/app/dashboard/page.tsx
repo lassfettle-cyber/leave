@@ -5,13 +5,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import LeaveRequestForm from '@/components/LeaveRequestForm'
-import type { PendingRequest, UpcomingLeave } from '@/types/database'
+import type { PendingRequest } from '@/types/database'
+
+interface UpcomingLeaveItem {
+  id: string
+  userId: string
+  userName: string
+  userEmail: string
+  position?: 'captain' | 'first_officer'
+  startDate: string
+  endDate: string
+  days: number
+  reason: string
+}
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
-  const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeave[]>([])
+  const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeaveItem[]>([])
   const [approvedLeaves, setApprovedLeaves] = useState<any[]>([])
   const [reminders, setReminders] = useState<any[]>([])
   const [stats, setStats] = useState({
@@ -201,7 +213,7 @@ function AdminDashboard({
   onDeny
 }: {
   pendingRequests: PendingRequest[]
-  upcomingLeave: UpcomingLeave[]
+  upcomingLeave: UpcomingLeaveItem[]
   approvedLeaves: any[]
   reminders: any[]
   stats: any
@@ -316,28 +328,45 @@ function AdminDashboard({
             </p>
           ) : (
             <div className="space-y-4">
-              {upcomingLeave.slice(0, 5).map((leave) => (
-                <div
-                  key={leave.id}
-                  className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {leave.full_name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {leave.days} day{leave.days !== 1 ? 's' : ''}
-                    </p>
+              {(() => {
+                // Group by month
+                const grouped = upcomingLeave.slice(0, 10).reduce((acc, leave) => {
+                  const monthYear = new Date(leave.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                  if (!acc[monthYear]) acc[monthYear] = []
+                  acc[monthYear].push(leave)
+                  return acc
+                }, {} as Record<string, typeof upcomingLeave>)
+
+                return Object.entries(grouped).map(([monthYear, leaves]) => (
+                  <div key={monthYear}>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">{monthYear}</h3>
+                    <div className="space-y-2">
+                      {leaves.map((leave) => (
+                        <div
+                          key={leave.id}
+                          className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {leave.userName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {leave.days} day{leave.days !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <div className="text-blue-600 text-sm font-medium">
+                            {Math.ceil((new Date(leave.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="text-blue-600 text-sm font-medium">
-                    {Math.ceil((new Date(leave.start_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
-                  </div>
-                </div>
-              ))}
-              {upcomingLeave.length > 5 && (
+                ))
+              })()}
+              {upcomingLeave.length > 10 && (
                 <div className="text-center">
                   <button
                     onClick={() => router.push('/dashboard/upcoming-leave')}
@@ -420,7 +449,12 @@ function AdminDashboard({
               ))}
               {reminders.length > 5 && (
                 <div className="text-center">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">View all reminders →</button>
+                  <button
+                    onClick={() => router.push('/dashboard/reminders')}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    View all reminders →
+                  </button>
                 </div>
               )}
             </div>
@@ -441,7 +475,7 @@ function EmployeeDashboard() {
     pendingRequests: 0,
     upcomingLeave: 0
   })
-  const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeave[]>([])
+  const [upcomingLeave, setUpcomingLeave] = useState<UpcomingLeaveItem[]>([])
   const [myLeave, setMyLeave] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showRequestForm, setShowRequestForm] = useState(false)
@@ -636,28 +670,45 @@ function EmployeeDashboard() {
             </p>
           ) : (
             <div className="space-y-4">
-              {upcomingLeave.slice(0, 5).map((leave) => (
-                <div
-                  key={leave.id}
-                  className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {leave.full_name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {leave.days} day{leave.days !== 1 ? 's' : ''}
-                    </p>
+              {(() => {
+                // Group by month
+                const grouped = upcomingLeave.slice(0, 10).reduce((acc, leave) => {
+                  const monthYear = new Date(leave.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                  if (!acc[monthYear]) acc[monthYear] = []
+                  acc[monthYear].push(leave)
+                  return acc
+                }, {} as Record<string, typeof upcomingLeave>)
+
+                return Object.entries(grouped).map(([monthYear, leaves]) => (
+                  <div key={monthYear}>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">{monthYear}</h3>
+                    <div className="space-y-2">
+                      {leaves.map((leave) => (
+                        <div
+                          key={leave.id}
+                          className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {leave.userName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {leave.days} day{leave.days !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <div className="text-blue-600 text-sm font-medium">
+                            {Math.ceil((new Date(leave.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="text-blue-600 text-sm font-medium">
-                    {Math.ceil((new Date(leave.start_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
-                  </div>
-                </div>
-              ))}
-              {upcomingLeave.length > 5 && (
+                ))
+              })()}
+              {upcomingLeave.length > 10 && (
                 <div className="text-center">
                   <button
                     onClick={() => router.push('/dashboard/upcoming-leave')}
