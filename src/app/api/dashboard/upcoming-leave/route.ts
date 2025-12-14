@@ -22,22 +22,41 @@ export async function GET(request: NextRequest) {
     
     // Get upcoming leave (approved leave requests starting from today)
     const result = await db.query(`
-      SELECT 
-        lr.*,
+      SELECT
+        lr.id,
+        lr.user_id,
         p.first_name,
         p.last_name,
-        (p.first_name || ' ' || p.last_name) as full_name
+        (p.first_name || ' ' || p.last_name) as full_name,
+        p.email,
+        p.position,
+        lr.start_date,
+        lr.end_date,
+        lr.days,
+        lr.reason
       FROM leave_requests lr
       JOIN profiles p ON lr.user_id = p.id
-      WHERE lr.status = 'approved' 
+      WHERE lr.status = 'approved'
         AND lr.start_date >= CURRENT_DATE
       ORDER BY lr.start_date ASC
-      LIMIT 10
     `)
-    
+
+    // Transform to match frontend expectations
+    const upcomingLeave = result.rows.map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      userName: row.full_name,
+      userEmail: row.email,
+      position: row.position,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      days: row.days,
+      reason: row.reason
+    }))
+
     return NextResponse.json({
       success: true,
-      data: result.rows
+      upcomingLeave
     })
   } catch (error) {
     console.error('Error fetching upcoming leave:', error)
