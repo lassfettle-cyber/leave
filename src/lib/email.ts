@@ -178,6 +178,9 @@ export const emailService = {
       console.error('Error sending password reset email:', error)
       return { success: false, error: 'Failed to send email' }
     }
+  },
+  async sendEmail(to: string, toName: string, subject: string, html: string, text: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
+    return await sendEmail(to, toName, subject, html, text)
   }
 }
 
