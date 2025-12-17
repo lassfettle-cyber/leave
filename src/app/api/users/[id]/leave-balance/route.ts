@@ -11,20 +11,24 @@ export async function GET(
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('GET /api/users/[id]/leave-balance: No auth header')
       return NextResponse.json({ error: 'Authorization token required' }, { status: 401 })
     }
 
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
 
-    // check admin
-    const adminRes = await db.query('SELECT role FROM profiles WHERE user_id = $1', [decoded.userId])
+    // check admin - profiles table uses 'id' not 'user_id'
+    const adminRes = await db.query('SELECT role FROM profiles WHERE id = $1', [decoded.userId])
     if (adminRes.rows.length === 0 || adminRes.rows[0].role !== 'admin') {
+      console.error('GET /api/users/[id]/leave-balance: Not admin', decoded.userId)
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
     const { id } = await params
     const year = new Date().getFullYear()
+
+    console.log(`GET /api/users/${id}/leave-balance: Fetching for year ${year}`)
 
     // Get leave balance for the user - simplified query
     const balanceResult = await db.query(
@@ -37,7 +41,10 @@ export async function GET(
       [id, year]
     )
 
+    console.log(`GET /api/users/${id}/leave-balance: Found ${balanceResult.rows.length} rows`)
+
     if (balanceResult.rows.length === 0) {
+      console.log(`GET /api/users/${id}/leave-balance: No balance found, returning zeros`)
       return NextResponse.json({
         success: true,
         data: {
@@ -49,6 +56,8 @@ export async function GET(
     }
 
     const balance = balanceResult.rows[0]
+    console.log(`GET /api/users/${id}/leave-balance: Balance data:`, balance)
+
     return NextResponse.json({
       success: true,
       data: {
@@ -59,7 +68,11 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error fetching leave balance:', error)
-    return NextResponse.json({ error: 'Failed to fetch leave balance' }, { status: 500 })
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    return NextResponse.json({
+      error: 'Failed to fetch leave balance',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
