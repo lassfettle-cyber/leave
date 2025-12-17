@@ -422,8 +422,14 @@ export default function UserManagementPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Users</h2>
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">Recent Users</h2>
+            <a
+              href="/dashboard/users/all"
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              View all users →
+            </a>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -444,7 +450,7 @@ export default function UserManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
+                {users.slice(0, 10).map((user) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
