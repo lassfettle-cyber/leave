@@ -4,6 +4,69 @@ import { db } from '@/lib/db'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Authorization token required' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
+
+    // check admin
+    const adminRes = await db.query('SELECT role FROM profiles WHERE user_id = $1', [decoded.userId])
+    if (adminRes.rows.length === 0 || adminRes.rows[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    const { id } = await params
+    const year = new Date().getFullYear()
+
+    // Get leave balance for the user
+    const balanceResult = await db.query(
+      `SELECT
+        lb.days_allocated,
+        COALESCE(SUM(lr.days), 0) as days_used,
+        lb.days_allocated - COALESCE(SUM(lr.days), 0) as days_remaining
+      FROM leave_balances lb
+      LEFT JOIN leave_requests lr ON lr.user_id = lb.user_id
+        AND lr.status = 'approved'
+        AND EXTRACT(YEAR FROM lr.start_date) = lb.year
+      WHERE lb.user_id = $1 AND lb.year = $2
+      GROUP BY lb.id, lb.days_allocated`,
+      [id, year]
+    )
+
+    if (balanceResult.rows.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          days_allocated: 0,
+          days_used: 0,
+          days_remaining: 0
+        }
+      })
+    }
+
+    const balance = balanceResult.rows[0]
+    return NextResponse.json({
+      success: true,
+      data: {
+        days_allocated: parseInt(balance.days_allocated) || 0,
+        days_used: parseInt(balance.days_used) || 0,
+        days_remaining: parseInt(balance.days_remaining) || 0
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching leave balance:', error)
+    return NextResponse.json({ error: 'Failed to fetch leave balance' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
