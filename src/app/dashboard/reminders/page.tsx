@@ -76,13 +76,15 @@ export default function RemindersPage() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        alert(`Reminder sent successfully to ${name}`)
+        alert(`✅ Reminder sent successfully to ${name}`)
       } else {
-        alert(data.error || 'Failed to send reminder')
+        const errorMsg = data.error || 'Failed to send reminder'
+        console.error('Reminder send failed:', errorMsg)
+        alert(`❌ ${errorMsg}`)
       }
     } catch (error) {
       console.error('Error sending reminder:', error)
-      alert('An error occurred while sending reminder')
+      alert('❌ An error occurred while sending reminder. Please check the console for details.')
     } finally {
       setSendingReminder(null)
     }
