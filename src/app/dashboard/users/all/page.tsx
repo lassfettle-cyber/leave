@@ -78,7 +78,9 @@ export default function AllUsersPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
               })
               const balanceData = await balanceRes.json()
-              
+
+              console.log(`Balance for ${user.email}:`, balanceData)
+
               if (balanceRes.ok && balanceData.success) {
                 return {
                   ...user,
@@ -87,13 +89,15 @@ export default function AllUsersPage() {
                   days_remaining: balanceData.data.days_remaining || 0
                 }
               }
+              console.warn(`Failed to get balance for ${user.email}:`, balanceData)
               return {
                 ...user,
                 days_allocated: 0,
                 days_used: 0,
                 days_remaining: 0
               }
-            } catch {
+            } catch (err) {
+              console.error(`Error fetching balance for ${user.email}:`, err)
               return {
                 ...user,
                 days_allocated: 0,

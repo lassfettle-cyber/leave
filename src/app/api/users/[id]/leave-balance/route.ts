@@ -26,18 +26,14 @@ export async function GET(
     const { id } = await params
     const year = new Date().getFullYear()
 
-    // Get leave balance for the user
+    // Get leave balance for the user - simplified query
     const balanceResult = await db.query(
       `SELECT
-        lb.days_allocated,
-        COALESCE(SUM(lr.days), 0) as days_used,
-        lb.days_allocated - COALESCE(SUM(lr.days), 0) as days_remaining
-      FROM leave_balances lb
-      LEFT JOIN leave_requests lr ON lr.user_id = lb.user_id
-        AND lr.status = 'approved'
-        AND EXTRACT(YEAR FROM lr.start_date) = lb.year
-      WHERE lb.user_id = $1 AND lb.year = $2
-      GROUP BY lb.id, lb.days_allocated`,
+        days_allocated,
+        days_used,
+        (days_allocated - days_used) as days_remaining
+      FROM leave_balances
+      WHERE user_id = $1 AND year = $2`,
       [id, year]
     )
 
