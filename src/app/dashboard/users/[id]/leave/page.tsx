@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 
 interface LeaveRequest {
   id: string
@@ -26,12 +27,16 @@ interface User {
 export default function UserLeavePage() {
   const params = useParams()
   const router = useRouter()
+  const { user: currentUser } = useAuth()
   const userId = params.id as string
 
   const [user, setUser] = useState<User | null>(null)
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingLeaveId, setDeletingLeaveId] = useState<string | null>(null)
+
+  const isAdmin = currentUser?.profile?.role === 'admin'
 
   useEffect(() => {
     loadUserLeave()
@@ -96,6 +101,38 @@ export default function UserLeavePage() {
       return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">👨‍✈️ First Officer</span>
     }
     return null
+  }
+
+  const handleDeleteLeave = async (leaveRequestId: string) => {
+    if (!confirm('Are you sure you want to delete this leave request? This will restore the days to the user\'s balance.')) {
+      return
+    }
+
+    try {
+      setDeletingLeaveId(leaveRequestId)
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch(`/api/leave-requests/${leaveRequestId}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        // Reload the leave data
+        await loadUserLeave()
+      } else {
+        const result = await response.json()
+        alert(`Failed to delete leave: ${result.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting leave:', error)
+      alert('An error occurred while deleting the leave request')
+    } finally {
+      setDeletingLeaveId(null)
+    }
   }
 
   // Group leave by status
@@ -176,6 +213,16 @@ export default function UserLeavePage() {
                         </div>
                         {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteLeave(request.id)}
+                          disabled={deletingLeaveId === request.id}
+                          className="ml-4 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete this leave request"
+                        >
+                          {deletingLeaveId === request.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -201,6 +248,16 @@ export default function UserLeavePage() {
                         </div>
                         {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteLeave(request.id)}
+                          disabled={deletingLeaveId === request.id}
+                          className="ml-4 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete this leave request"
+                        >
+                          {deletingLeaveId === request.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -226,6 +283,16 @@ export default function UserLeavePage() {
                         </div>
                         {request.reason && <p className="text-sm text-gray-600 mt-1">{request.reason}</p>}
                       </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteLeave(request.id)}
+                          disabled={deletingLeaveId === request.id}
+                          className="ml-4 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete this leave request"
+                        >
+                          {deletingLeaveId === request.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
