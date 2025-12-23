@@ -46,10 +46,20 @@ export default function AddLeaveModal({ onSuccess, onCancel }: AddLeaveModalProp
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   const [holidays, setHolidays] = useState<Array<{ holiday_date: string; name: string }>>([])
   const [disabledDates, setDisabledDates] = useState<Set<string>>(new Set())
+  const [positionCapacityDates, setPositionCapacityDates] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadUsersAndSettings()
   }, [])
+
+  // Fetch position capacity when user is selected
+  useEffect(() => {
+    if (formData.userId) {
+      loadPositionCapacity()
+    } else {
+      setPositionCapacityDates(new Set())
+    }
+  }, [formData.userId])
 
   const loadUsersAndSettings = async () => {
     try {
@@ -90,10 +100,36 @@ export default function AddLeaveModal({ onSuccess, onCancel }: AddLeaveModalProp
     }
   }
 
-  // Build disabled dates based on excluded weekdays and holidays
+  const loadPositionCapacity = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const selectedUser = users.find(u => u.id === formData.userId)
+      if (!selectedUser || !selectedUser.position) return
+
+      const response = await fetch(
+        `/api/admin/position-capacity?position=${selectedUser.position}&userId=${selectedUser.id}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setPositionCapacityDates(new Set(data.disabledDates || []))
+        }
+      }
+    } catch (error) {
+      console.error('Error loading position capacity:', error)
+    }
+  }
+
+  // Build disabled dates based on excluded weekdays, holidays, and position capacity
   useEffect(() => {
     const disabled = new Set<string>()
-    
+
     // Add holidays
     holidays.forEach(h => {
       disabled.add(h.holiday_date)
@@ -104,7 +140,7 @@ export default function AddLeaveModal({ onSuccess, onCancel }: AddLeaveModalProp
       const start = new Date('2026-01-01')
       const end = new Date('2026-12-31')
       const current = new Date(start)
-      
+
       while (current <= end) {
         if (excludedWeekdays.includes(current.getDay())) {
           disabled.add(current.toISOString().split('T')[0])
@@ -113,8 +149,13 @@ export default function AddLeaveModal({ onSuccess, onCancel }: AddLeaveModalProp
       }
     }
 
+    // Add position capacity dates (dates with 5 captains or 5 first officers)
+    positionCapacityDates.forEach(date => {
+      disabled.add(date)
+    })
+
     setDisabledDates(disabled)
-  }, [excludedWeekdays, holidays])
+  }, [excludedWeekdays, holidays, positionCapacityDates])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
