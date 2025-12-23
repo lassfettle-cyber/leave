@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 
 interface LeaveBlock {
   id: string
@@ -19,6 +20,7 @@ interface LeaveBlock {
   isStart: boolean
   isEnd: boolean
   totalDays: number
+  leaveRequestId: string
 }
 
 type WeekKey = string // yyyy-mm-dd of the week's Sunday
@@ -34,6 +36,7 @@ interface WeekSegment {
   colSpan: number // 1..7
   roundedLeft: boolean
   roundedRight: boolean
+  leaveRequestId: string
 }
 
 interface LeaveCalendarProps {
@@ -72,6 +75,7 @@ function getUserColor(userId: string): typeof USER_COLORS[0] {
 
 export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [leaveBlocks, setLeaveBlocks] = useState<LeaveBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -80,9 +84,46 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   const [holidaysByDate, setHolidaysByDate] = useState<Record<string, string>>({})
   const holidaySet = useMemo(() => new Set(Object.keys(holidaysByDate)), [holidaysByDate])
+  const [deletingLeaveId, setDeletingLeaveId] = useState<string | null>(null)
+
+  const isAdmin = user?.profile?.role === 'admin'
 
   const handleUserClick = (userId: string) => {
     router.push(`/dashboard/users/${userId}/leave`)
+  }
+
+  const handleDeleteLeave = async (leaveRequestId: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the user click
+
+    if (!confirm('Are you sure you want to delete this leave request? This will restore the days to the user\'s balance.')) {
+      return
+    }
+
+    try {
+      setDeletingLeaveId(leaveRequestId)
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch(`/api/leave-requests/${leaveRequestId}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        // Reload the calendar data
+        await loadLeaveData()
+      } else {
+        const result = await response.json()
+        alert(`Failed to delete leave: ${result.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting leave:', error)
+      alert('An error occurred while deleting the leave request')
+    } finally {
+      setDeletingLeaveId(null)
+    }
   }
 
   // Load settings once (excluded weekdays and holidays)
@@ -305,7 +346,8 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
           colStart,
           colSpan,
           roundedLeft,
-          roundedRight
+          roundedRight,
+          leaveRequestId: first.leaveRequestId
         })
         i = j
       }
@@ -470,20 +512,33 @@ export default function LeaveCalendar({ viewType }: LeaveCalendarProps) {
                   {segmentsForWeek.map((seg, i) => {
                     const userColor = getUserColor(seg.user.id)
                     const positionIcon = seg.user.position === 'captain' ? '✈️' : seg.user.position === 'first_officer' ? '👨‍✈️' : ''
+                    const isDeleting = deletingLeaveId === seg.leaveRequestId
                     return (
                       <div
                         key={`${seg.id}-${i}`}
-                        className="relative flex items-center h-6 mt-1 cursor-pointer"
+                        className="relative flex items-center h-6 mt-1 cursor-pointer group"
                         style={{ gridColumn: `${seg.colStart} / span ${seg.colSpan}` }}
                         title={`${seg.user.fullName} (${seg.user.position === 'captain' ? 'Captain' : 'First Officer'}) - ${seg.reason}\nClick to view all leave`}
                         onClick={() => handleUserClick(seg.user.id)}
                       >
-                        <div className={`w-full ${userColor.bg} opacity-65 text-white text-xs h-6 flex items-center ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-80 transition-opacity shadow-sm`}>
-                          <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold shadow-sm`}>
-                            {seg.user.initials}
+                        <div className={`w-full ${userColor.bg} opacity-65 text-white text-xs h-6 flex items-center justify-between ${seg.roundedLeft ? 'rounded-l-full' : 'rounded-none'} ${seg.roundedRight ? 'rounded-r-full' : 'rounded-none'} hover:opacity-80 transition-opacity shadow-sm ${isDeleting ? 'opacity-30' : ''}`}>
+                          <div className="flex items-center">
+                            <div className={`ml-2 mr-1 w-5 h-5 bg-white rounded-full flex items-center justify-center ${userColor.text} text-[10px] font-bold shadow-sm`}>
+                              {seg.user.initials}
+                            </div>
+                            <span className="truncate pr-1 font-semibold">{seg.user.firstName}</span>
+                            <span className="text-[10px] mr-1">{positionIcon}</span>
                           </div>
-                          <span className="truncate pr-1 font-semibold">{seg.user.firstName}</span>
-                          <span className="text-[10px] mr-1">{positionIcon}</span>
+                          {isAdmin && seg.roundedRight && (
+                            <button
+                              onClick={(e) => handleDeleteLeave(seg.leaveRequestId, e)}
+                              disabled={isDeleting}
+                              className="mr-2 opacity-0 group-hover:opacity-100 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-opacity disabled:opacity-50"
+                              title="Delete this leave request"
+                            >
+                              {isDeleting ? '...' : '×'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     )

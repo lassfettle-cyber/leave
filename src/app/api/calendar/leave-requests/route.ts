@@ -93,7 +93,8 @@ export async function GET(request: NextRequest) {
             reason: request.reason,
             isStart: currentDate.getTime() === startDate.getTime(),
             isEnd: currentDate.getTime() === endDate.getTime(),
-            totalDays: request.days
+            totalDays: request.days,
+            leaveRequestId: request.id
           })
         }
         currentDate.setDate(currentDate.getDate() + 1)
